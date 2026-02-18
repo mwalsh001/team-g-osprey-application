@@ -31,8 +31,8 @@ let entriesCollection = null;
 
 async function run() {
     await dbconnect.connect().then(() => console.log("Connected!"));
-    usersCollection = await dbconnect.db("a3").collection("users");
-    entriesCollection = await dbconnect.db("a3").collection("entries2");
+    usersCollection = await dbconnect.db("osprey-data").collection("users");
+    entriesCollection = await dbconnect.db("osprey-data").collection("data");
 
     // Login
     app.post("/api/login", async (req, res) => {
