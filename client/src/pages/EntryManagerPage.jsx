@@ -426,8 +426,6 @@ export default function AnnualFormPage({ username, onLogout }) {
         return (
             <div>
                 <h3 style={{ marginTop: 0 }}>{title}</h3>
-                <p style={{ marginTop: 0, opacity: 0.85 }}>All values must be non-negative integers.</p>
-
                 <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
                     {field("STUDENTS_ADDED_DURING_YEAR", "Students added during year")}
                     {field("STUDENTS_GRADUATED", "Students graduated")}
