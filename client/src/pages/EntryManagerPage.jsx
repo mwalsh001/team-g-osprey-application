@@ -1,127 +1,484 @@
-import { useEffect, useState } from "react";
-import {
-    getEntries,
-    addEntry,
-    editEntry,
-    deleteEntry
-} from "../api/entryApi";
+import { useEffect, useMemo, useState } from "react";
 import AppHeader from "../components/AppHeader.jsx";
-import EntryForm from "../components/EntryForm.jsx";
-import EntryTable from "../components/EntryTable.jsx";
+import {
+    addAAE,
+    addAttrition,
+    addAttritionSoc,
+    deleteAAE,
+    editAAE,
+    editAttrition,
+    editAttritionSoc,
+    getAAE,
+    getAttrition,
+    getAttritionSoc,
+    getSchools,
+    getSchoolYears,
+} from "../api/annualBenchmarkingApi.js";
 
+// Helpers
+function toIntOrEmpty(v) {
+    if (v === "" || v === null || v === undefined) return "";
+    const n = Number(v);
+    return Number.isFinite(n) ? n : "";
+}
 
-export default function EntryManagerPage({ username, onLogout }) {
-    const [entries, setEntries] = useState([]);
-    const [editingId, setEditingId] = useState(null);
+export default function AnnualFormPage({ username, onLogout }) {
+    const [schools, setSchools] = useState([]);
+    const [years, setYears] = useState([]);
+
+    const [schoolId, setSchoolId] = useState("");
+    const [schoolYearId, setSchoolYearId] = useState("");
+
+    const [section, setSection] = useState("AAE");
+
+    const [aaeRows, setAaeRows] = useState([]);
+    const [attrRows, setAttrRows] = useState([]);
+    const [attrSocRows, setAttrSocRows] = useState([]);
+
+    const [aaeGrid, setAaeGrid] = useState(() => {
+        const g = {};
+        for (const t of ["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"]) {
+            g[t] = {};
+            for (const gen of ["F", "M", "NB"]) g[t][gen] = "";
+        }
+        return g;
+    });
+
+    const [attrForm, setAttrForm] = useState({
+        STUDENTS_ADDED_DURING_YEAR: "",
+        STUDENTS_GRADUATED: "",
+        EXCH_STUD_REPTS: "",
+        STUD_DISS_WTHD: "",
+        STUD_NOT_INV: "",
+        STUD_NOT_RETURN: "",
+    });
+
+    const [attrSocForm, setAttrSocForm] = useState({
+        STUDENTS_ADDED_DURING_YEAR: "",
+        STUDENTS_GRADUATED: "",
+        EXCH_STUD_REPTS: "",
+        STUD_DISS_WTHD: "",
+        STUD_NOT_INV: "",
+        STUD_NOT_RETURN: "",
+    });
+
     const [notify, setNotify] = useState("");
 
-    const [date, setDate] = useState("");
-    const [valueA, setValueA] = useState("");
-    const [valueB, setValueB] = useState("");
+    const selectedSchool = useMemo(
+        () => schools.find((s) => String(s.id) === String(schoolId)),
+        [schools, schoolId]
+    );
+    const selectedYear = useMemo(
+        () => years.find((y) => String(y.id) === String(schoolYearId)),
+        [years, schoolYearId]
+    );
 
+    // load lookups
     useEffect(() => {
-        async function load() {
+        async function loadLookups() {
             try {
-                const response = await getEntries();
-                setEntries(response);
+                const [s, y] = await Promise.all([getSchools(), getSchoolYears()]);
+                setSchools(s);
+                setYears(y);
+                if (s?.length && !schoolId) setSchoolId(String(s[0].id));
+                if (y?.length && !schoolYearId) setSchoolYearId(String(y[0].id));
             } catch (e) {
                 alert("Unauthorized");
-                setEntries([]);
                 setTimeout(() => {
                     localStorage.removeItem("token");
                     localStorage.removeItem("username");
-                    onLogout();
-                }, 2000);
+                    onLogout?.();
+                }, 1000);
             }
         }
-        void load();
+        void loadLookups();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const submit = async (event) => {
-        event.preventDefault();
+    // load annual data
+    useEffect(() => {
+        async function loadAnnualData() {
+            if (!schoolId || !schoolYearId) return;
 
-        const json = {
-            date,
-            valueA,
-            valueB
+            try {
+                setNotify("");
+
+                const [aae, attr, attrSoc] = await Promise.all([
+                    getAAE({ schoolId, schoolYearId }),
+                    getAttrition({ schoolId, schoolYearId }),
+                    getAttritionSoc({ schoolId, schoolYearId }),
+                ]);
+
+                setAaeRows(aae);
+                setAttrRows(attr);
+                setAttrSocRows(attrSoc);
+
+                const nextGrid = {};
+                for (const t of ["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"]) {
+                    nextGrid[t] = {};
+                    for (const gen of ["F", "M", "NB"]) nextGrid[t][gen] = "";
+                }
+                for (const r of aae) {
+                    const t = r.ENROLLMENT_TYPE_CD;
+                    const g = r.GENDER;
+                    if (nextGrid[t] && nextGrid[t][g] !== undefined) {
+                        nextGrid[t][g] = String(toIntOrEmpty(r.NR_ENROLLED));
+                    }
+                }
+                setAaeGrid(nextGrid);
+
+                const firstAttr = attr?.[0];
+                setAttrForm({
+                    STUDENTS_ADDED_DURING_YEAR: firstAttr ? String(toIntOrEmpty(firstAttr.STUDENTS_ADDED_DURING_YEAR)) : "",
+                    STUDENTS_GRADUATED: firstAttr ? String(toIntOrEmpty(firstAttr.STUDENTS_GRADUATED)) : "",
+                    EXCH_STUD_REPTS: firstAttr ? String(toIntOrEmpty(firstAttr.EXCH_STUD_REPTS)) : "",
+                    STUD_DISS_WTHD: firstAttr ? String(toIntOrEmpty(firstAttr.STUD_DISS_WTHD)) : "",
+                    STUD_NOT_INV: firstAttr ? String(toIntOrEmpty(firstAttr.STUD_NOT_INV)) : "",
+                    STUD_NOT_RETURN: firstAttr ? String(toIntOrEmpty(firstAttr.STUD_NOT_RETURN)) : "",
+                });
+
+                const firstAttrSoc = attrSoc?.[0];
+                setAttrSocForm({
+                    STUDENTS_ADDED_DURING_YEAR: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUDENTS_ADDED_DURING_YEAR)) : "",
+                    STUDENTS_GRADUATED: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUDENTS_GRADUATED)) : "",
+                    EXCH_STUD_REPTS: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.EXCH_STUD_REPTS)) : "",
+                    STUD_DISS_WTHD: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUD_DISS_WTHD)) : "",
+                    STUD_NOT_INV: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUD_NOT_INV)) : "",
+                    STUD_NOT_RETURN: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUD_NOT_RETURN)) : "",
+                });
+            } catch (e) {
+                alert("Unauthorized");
+                setTimeout(() => {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("username");
+                    onLogout?.();
+                }, 1000);
+            }
+        }
+
+        void loadAnnualData();
+    }, [schoolId, schoolYearId, onLogout]);
+
+    // Submit
+    async function saveAAESection() {
+        if (!schoolId || !schoolYearId) return;
+
+        try {
+            setNotify("");
+
+            const byKey = new Map();
+            for (const r of aaeRows) byKey.set(`${r.ENROLLMENT_TYPE_CD}__${r.GENDER}`, r);
+
+            for (const t of ["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"]) {
+                for (const g of ["F", "M", "NB"]) {
+                    const key = `${t}__${g}`;
+                    const cell = aaeGrid[t][g];
+                    const existing = byKey.get(key);
+
+                    if (cell === "") {
+                        if (existing) {
+                            await deleteAAE({
+                                mongoId: existing.mongoId,
+                                schoolId: Number(schoolId),
+                                schoolYearId: Number(schoolYearId),
+                            });
+                        }
+                    } else {
+                        const nr = Number(cell);
+                        if (existing) {
+                            await editAAE({
+                                mongoId: existing.mongoId,
+                                schoolId: Number(schoolId),
+                                schoolYearId: Number(schoolYearId),
+                                ENROLLMENT_TYPE_CD: t,
+                                GENDER: g,
+                                NR_ENROLLED: nr,
+                            });
+                        } else {
+                            await addAAE({
+                                schoolId: Number(schoolId),
+                                schoolYearId: Number(schoolYearId),
+                                ENROLLMENT_TYPE_CD: t,
+                                GENDER: g,
+                                NR_ENROLLED: nr,
+                            });
+                        }
+                    }
+                }
+            }
+
+            const refreshed = await getAAE({ schoolId, schoolYearId });
+            setAaeRows(refreshed);
+
+            setNotify("Saved Admissions → Enrollment section.");
+        } catch (e) {
+            setNotify(`Error saving AAE: ${String(e?.message ?? e)}`);
+        }
+    }
+
+    async function saveAttritionSection({ soc }) {
+        if (!schoolId || !schoolYearId) return;
+
+        const form = soc ? attrSocForm : attrForm;
+        const payload = {
+            schoolId: Number(schoolId),
+            schoolYearId: Number(schoolYearId),
+            STUDENTS_ADDED_DURING_YEAR: Number(form.STUDENTS_ADDED_DURING_YEAR),
+            STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUADATED ?? form.STUDENTS_GRADUATED), // safety
+            EXCH_STUD_REPTS: Number(form.EXCH_STUD_REPTS),
+            STUD_DISS_WTHD: Number(form.STUD_DISS_WTHD),
+            STUD_NOT_INV: Number(form.STUD_NOT_INV),
+            STUD_NOT_RETURN: Number(form.STUD_NOT_RETURN),
         };
 
-        let updatedData;
-        const isEditing = Boolean(editingId);
+        try {
+            setNotify("");
 
-        if (isEditing) {
-            updatedData = await editEntry({ ...json, id: editingId });
-            setNotify(
-                `Entry successfully updated. Date: ${date}, Value A: ${valueA}, Value B: ${valueB}`
-            );
-        } else {
-            updatedData = await addEntry(json);
-            setNotify(
-                `Entry successfully added. Date: ${date}, Value A: ${valueA}, Value B: ${valueB}`
-            );
+            const rows = soc ? attrSocRows : attrRows;
+            const first = rows?.[0];
+
+            if (first) {
+                const updated = soc
+                    ? await editAttritionSoc({ ...payload, mongoId: first.mongoId })
+                    : await editAttrition({ ...payload, mongoId: first.mongoId });
+
+                soc ? setAttrSocRows(updated) : setAttrRows(updated);
+            } else {
+                const updated = soc ? await addAttritionSoc(payload) : await addAttrition(payload);
+                soc ? setAttrSocRows(updated) : setAttrRows(updated);
+            }
+
+            setNotify(soc ? "Saved Attrition (SOC) section." : "Saved Attrition section.");
+        } catch (e) {
+            setNotify(`Error saving attrition: ${String(e?.message ?? e)}`);
         }
+    }
 
-        setEntries(updatedData);
-
-        setEditingId(null);
-        setDate("");
-        setValueA("");
-        setValueB("");
-    };
-
-    const handleDelete = async (entry) => {
-        const updated = await deleteEntry(entry.id);
-        setEntries(updated);
-
-        setNotify(
-            `Entry successfully deleted. Date: ${entry.date}, Value A: ${entry.valueA}, Value B: ${entry.valueB}`
+    // -------------------- UI --------------------
+    function AnnualContextHeader() {
+        return (
+            <div style={{ marginBottom: "1rem" }}>
+                <h2 style={{ margin: 0 }}>Annual Benchmarking Form</h2>
+                <div style={{ opacity: 0.85 }}>
+                    {selectedSchool ? (
+                        <>
+                            <strong>School:</strong> {selectedSchool.name} (ID: {selectedSchool.id}){" "}
+                            {selectedSchool.region ? `| Region: ${selectedSchool.region}` : ""}
+                        </>
+                    ) : (
+                        <span>Select a school</span>
+                    )}
+                    {"  •  "}
+                    {selectedYear ? (
+                        <>
+                            <strong>Year:</strong> {selectedYear.year ?? selectedYear.id} (ID: {selectedYear.id})
+                        </>
+                    ) : (
+                        <span>Select a year</span>
+                    )}
+                </div>
+            </div>
         );
+    }
 
-        if (editingId === entry.id) {
-            setEditingId(null);
-            setDate("");
-            setValueA("");
-            setValueB("");
-        }
-    };
+    function SectionTabs() {
+        return (
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+                {[
+                    { key: "AAE", label: "Admissions → Enrollment (AAE)" },
+                    { key: "ATTR", label: "Enrollment → Attrition" },
+                    { key: "ATTR_SOC", label: "Enrollment → Attrition (SOC)" },
+                ].map(({ key, label }) => (
+                    <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                            setSection(key);
+                                        setNotify("");
+                        }}
+                        style={{
+                            padding: "0.5rem 0.75rem",
+                            border: "1px solid #ccc",
+                            background: section === key ? "#eee" : "white",
+                            cursor: "pointer",
+                        }}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div>
+        );
+    }
 
-    const handleEdit = (entry) => {
-        setDate(entry.date);
-        setValueA(entry.valueA);
-        setValueB(entry.valueB);
+    function AnnualSelectors() {
+        return (
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
+                <label>
+                    School
+                    <br />
+                    <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
+                        {schools.map((s) => (
+                            <option key={s.id} value={String(s.id)}>
+                                {s.name} (ID: {s.id})
+                            </option>
+                        ))}
+                    </select>
+                </label>
 
-        setEditingId(entry.id);
-        setNotify("");
-    };
+                <label>
+                    School Year
+                    <br />
+                    <select value={schoolYearId} onChange={(e) => setSchoolYearId(e.target.value)}>
+                        {years.map((y) => (
+                            <option key={y.id} value={String(y.id)}>
+                                {y.year ?? y.id} (ID: {y.id})
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
+        );
+    }
+
+    function AAESection() {
+        return (
+            <div>
+                <h3 style={{ marginTop: 0 }}>Admissions → Enrollment</h3>
+                <p style={{ marginTop: 0, opacity: 0.85 }}>
+                    Enter the number enrolled for each Enrollment Type and Gender. Leave blank to remove that row.
+                </p>
+
+                <div style={{ overflowX: "auto" }}>
+                    <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", minWidth: 700 }}>
+                        <thead>
+                        <tr>
+                            <th>ENROLLMENT_TYPE_CD</th>
+                            {["F", "M", "NB"].map((g) => (
+                                <th key={g}>{g}</th>
+                            ))}
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"].map((t) => (
+                            <tr key={t}>
+                                <td style={{ fontWeight: 600 }}>{t}</td>
+                                {["F", "M", "NB"].map((g) => {
+                                    return (
+                                        <td key={g}>
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={aaeGrid[t][g] ?? ""}
+                                                onChange={(e) => {
+                                                    const next = e.target.value;
+                                                    setAaeGrid((prev) => ({
+                                                        ...prev,
+                                                        [t]: { ...prev[t], [g]: next },
+                                                    }));
+                                                }}
+                                                placeholder="(blank = none)"
+                                                style={{
+                                                    width: "120px",
+                                                }}
+                                            />
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                    <button
+                        type="button"
+                        onClick={saveAAESection}
+                        disabled={!schoolId || !schoolYearId}
+                        title="For MVP, Submit just saves."
+                    >
+                        Submit Section
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    function AttritionForm({ title, form, setForm, onSave }) {
+        const field = (name, label) => {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                    <label style={{ fontWeight: 600 }}>{label}</label>
+                    <input
+                        type="text"
+                        inputMode="numeric"
+                        value={form[name] ?? ""}
+                        onChange={(e) => {
+                            const next = e.target.value;
+                            setForm((prev) => ({ ...prev, [name]: next }));
+                        }}
+                        style={{ width: "240px", border: "1px solid #ccc" }}
+                    />
+                </div>
+            );
+        };
+
+        return (
+            <div>
+                <h3 style={{ marginTop: 0 }}>{title}</h3>
+                <p style={{ marginTop: 0, opacity: 0.85 }}>All values must be non-negative integers.</p>
+
+                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                    {field("STUDENTS_ADDED_DURING_YEAR", "Students added during year")}
+                    {field("STUDENTS_GRADUATED", "Students graduated")}
+                    {field("EXCH_STUD_REPTS", "Exchange student reports")}
+                    {field("STUD_DISS_WTHD", "Dismissed / withdrew")}
+                    {field("STUD_NOT_INV", "Not invited")}
+                    {field("STUD_NOT_RETURN", "Not returning")}
+                </div>
+
+                <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                    <button type="button" onClick={onSave} disabled={!schoolId || !schoolYearId}>
+                        Submit Section
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout}/>
-            {notify && <p>{notify}</p>}
+            <AppHeader username={username} onLogout={onLogout} />
 
-            <EntryForm
-                date={date}
-                valueA={valueA}
-                valueB={valueB}
-                editing={editingId}
-                onDateChange={setDate}
-                onValueAChange={setValueA}
-                onValueBChange={setValueB}
-                onSubmit={submit}
-                onCancel={() => {
-                    setEditingId(null);
-                    setDate("");
-                    setValueA("");
-                    setValueB("");
-                }}
-            />
+            <div style={{ padding: "1rem" }}>
+                <AnnualContextHeader />
+                <AnnualSelectors />
+                <SectionTabs />
 
-            <EntryTable
-                entries={entries}
-                editingId={editingId}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-            />
+                {notify && <p>{notify}</p>}
+
+                <div style={{ border: "1px solid #ddd", padding: "1rem", borderRadius: "6px" }}>
+                    {section === "AAE" && <AAESection />}
+
+                    {section === "ATTR" && (
+                        <AttritionForm
+                            title="Enrollment → Attrition"
+                            form={attrForm}
+                            setForm={setAttrForm}
+                            onSave={() => saveAttritionSection({ soc: false })}
+                        />
+                    )}
+
+                    {section === "ATTR_SOC" && (
+                        <AttritionForm
+                            title="Enrollment → Attrition (Students of Color)"
+                            form={attrSocForm}
+                            setForm={setAttrSocForm}
+                            onSave={() => saveAttritionSection({ soc: true })}
+                        />
+                    )}
+                </div>
+            </div>
         </>
     );
 }
