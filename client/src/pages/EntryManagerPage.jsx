@@ -13,6 +13,7 @@ import {
     getAttritionSoc,
     getSchools,
     getSchoolYears,
+    chooseDisplaySchool,
 } from "../api/annualBenchmarkingApi.js";
 
 // Helpers
@@ -28,6 +29,8 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     const [schoolId, setSchoolId] = useState("");
     const [schoolYearId, setSchoolYearId] = useState("");
+
+    const [displaySchoolId, setDisplaySchoolId] = useState("");
 
     const [section, setSection] = useState("AAE");
 
@@ -338,7 +341,35 @@ export default function AnnualFormPage({ username, onLogout }) {
                 </label>
             </div>
         );
+    }function AnnualGraphSelector() {
+        return (
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
+                <label>
+                    School
+                    <br />
+                    <select value={displaySchoolId} onChange={(e) => sendDisplaySchool(e)}>
+                        {schools.map((s) => (
+                            <option key={s.id} value={String(s.id)}>
+                                {s.name} (ID: {s.id})
+                            </option>
+                        ))}
+                    </select>
+                </label>
+            </div>
+        );
     }
+
+    async function sendDisplaySchool(e)
+    {
+        console.log("e:" + e.target.value)
+        setDisplaySchoolId(e.target.value)
+        console.log("sending data!")
+        const payload = {displaySchoolId: Number(displaySchoolId),}
+        const res =  await chooseDisplaySchool(payload)
+        console.log(res)
+    }
+
+
 
     function AAESection() {
         return (
@@ -476,6 +507,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                         />
                     )}
                 </div>
+                <AnnualGraphSelector/>
             </div>
         </>
     );

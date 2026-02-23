@@ -76,7 +76,7 @@ async function run() {
     app.get("/api/schools", requireAuth, async (req, res) => {
         const rows = await schoolCol
             .find({}, { projection: { ID: 1, NAME_TX: 1, REGION_CD: 1 } })
-            .sort({ NAME_TX: 1 })
+            .sort({ ID: 1 })
             .toArray();
 
         res.json(rows.map(s => ({
@@ -394,6 +394,11 @@ async function run() {
         const rows = await easocCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
         res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
     });
+
+    app.post("/api/chooseDisplaySchool", requireAuth, async(req, res) =>{
+        console.log(req.body)
+        res.json({displaySchoolId: req.body})
+    })
 }
 
 const clientDist = path.join(__dirname, "..", "client", "dist");
