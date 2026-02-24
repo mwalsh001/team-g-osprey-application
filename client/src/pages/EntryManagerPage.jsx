@@ -11,23 +11,20 @@ import {
     getAAE,
     getAttrition,
     getAttritionSoc,
+    getGrades,
     getSchools,
     getSchoolYears,
 } from "../api/annualBenchmarkingApi.js";
 
 // Helpers
-function toIntOrEmpty(v) {
-    if (v === "" || v === null || v === undefined) return "";
-    const n = Number(v);
-    return Number.isFinite(n) ? n : "";
-}
-
 export default function AnnualFormPage({ username, onLogout }) {
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
+    const [grades, setGrades] = useState([]);
 
     const [schoolId, setSchoolId] = useState("");
     const [schoolYearId, setSchoolYearId] = useState("");
+    const [gradeId, setGradeId] = useState("");
 
     const [section, setSection] = useState("AAE");
 
@@ -37,9 +34,9 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     const [aaeGrid, setAaeGrid] = useState(() => {
         const g = {};
-        for (const t of ["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"]) {
+        for (const t of ["INQUIRIES", "FACULTYCHILD"]) {
             g[t] = {};
-            for (const gen of ["F", "M", "NB"]) g[t][gen] = "";
+            for (const gen of ["M", "F", "NB", "U"]) g[t][gen] = "";
         }
         return g;
     });
@@ -72,16 +69,22 @@ export default function AnnualFormPage({ username, onLogout }) {
         () => years.find((y) => String(y.id) === String(schoolYearId)),
         [years, schoolYearId]
     );
+    const selectedGrade = useMemo(
+        () => grades.find((g) => String(g.id) === String(gradeId)),
+        [grades, gradeId]
+    );
 
     // load lookups
     useEffect(() => {
         async function loadLookups() {
             try {
-                const [s, y] = await Promise.all([getSchools(), getSchoolYears()]);
+                const [s, y, g] = await Promise.all([getSchools(), getSchoolYears(), getGrades()]);
                 setSchools(s);
                 setYears(y);
+                setGrades(g);
                 if (s?.length && !schoolId) setSchoolId(String(s[0].id));
                 if (y?.length && !schoolYearId) setSchoolYearId(String(y[0].id));
+                if (g?.length && !gradeId) setGradeId(String(g[0].id));
             } catch (e) {
                 alert("Unauthorized");
                 setTimeout(() => {
@@ -103,48 +106,48 @@ export default function AnnualFormPage({ username, onLogout }) {
             try {
                 setNotify("");
 
-                const [aae, attr, attrSoc] = await Promise.all([
-                    getAAE({ schoolId, schoolYearId }),
-                    getAttrition({ schoolId, schoolYearId }),
-                    getAttritionSoc({ schoolId, schoolYearId }),
-                ]);
+            const [aae, attr, attrSoc] = await Promise.all([
+                getAAE({ schoolId, schoolYearId }),
+                getAttrition({ schoolId, schoolYearId, gradeId }),
+                getAttritionSoc({ schoolId, schoolYearId, gradeId }),
+            ]);
 
                 setAaeRows(aae);
                 setAttrRows(attr);
                 setAttrSocRows(attrSoc);
 
                 const nextGrid = {};
-                for (const t of ["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"]) {
+                for (const t of ["INQUIRIES", "FACULTYCHILD"]) {
                     nextGrid[t] = {};
-                    for (const gen of ["F", "M", "NB"]) nextGrid[t][gen] = "";
+                    for (const gen of ["M", "F", "NB", "U"]) nextGrid[t][gen] = "";
                 }
                 for (const r of aae) {
                     const t = r.ENROLLMENT_TYPE_CD;
                     const g = r.GENDER;
                     if (nextGrid[t] && nextGrid[t][g] !== undefined) {
-                        nextGrid[t][g] = String(toIntOrEmpty(r.NR_ENROLLED));
+                        nextGrid[t][g] = String(r.NR_ENROLLED ?? "");
                     }
                 }
                 setAaeGrid(nextGrid);
 
                 const firstAttr = attr?.[0];
                 setAttrForm({
-                    STUDENTS_ADDED_DURING_YEAR: firstAttr ? String(toIntOrEmpty(firstAttr.STUDENTS_ADDED_DURING_YEAR)) : "",
-                    STUDENTS_GRADUATED: firstAttr ? String(toIntOrEmpty(firstAttr.STUDENTS_GRADUATED)) : "",
-                    EXCH_STUD_REPTS: firstAttr ? String(toIntOrEmpty(firstAttr.EXCH_STUD_REPTS)) : "",
-                    STUD_DISS_WTHD: firstAttr ? String(toIntOrEmpty(firstAttr.STUD_DISS_WTHD)) : "",
-                    STUD_NOT_INV: firstAttr ? String(toIntOrEmpty(firstAttr.STUD_NOT_INV)) : "",
-                    STUD_NOT_RETURN: firstAttr ? String(toIntOrEmpty(firstAttr.STUD_NOT_RETURN)) : "",
+                    STUDENTS_ADDED_DURING_YEAR: firstAttr ? String(firstAttr.STUDENTS_ADDED_DURING_YEAR ?? "") : "",
+                    STUDENTS_GRADUATED: firstAttr ? String(firstAttr.STUDENTS_GRADUATED ?? "") : "",
+                    EXCH_STUD_REPTS: firstAttr ? String(firstAttr.EXCH_STUD_REPTS ?? "") : "",
+                    STUD_DISS_WTHD: firstAttr ? String(firstAttr.STUD_DISS_WTHD ?? "") : "",
+                    STUD_NOT_INV: firstAttr ? String(firstAttr.STUD_NOT_INV ?? "") : "",
+                    STUD_NOT_RETURN: firstAttr ? String(firstAttr.STUD_NOT_RETURN ?? "") : "",
                 });
 
                 const firstAttrSoc = attrSoc?.[0];
                 setAttrSocForm({
-                    STUDENTS_ADDED_DURING_YEAR: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUDENTS_ADDED_DURING_YEAR)) : "",
-                    STUDENTS_GRADUATED: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUDENTS_GRADUATED)) : "",
-                    EXCH_STUD_REPTS: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.EXCH_STUD_REPTS)) : "",
-                    STUD_DISS_WTHD: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUD_DISS_WTHD)) : "",
-                    STUD_NOT_INV: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUD_NOT_INV)) : "",
-                    STUD_NOT_RETURN: firstAttrSoc ? String(toIntOrEmpty(firstAttrSoc.STUD_NOT_RETURN)) : "",
+                    STUDENTS_ADDED_DURING_YEAR: firstAttrSoc ? String(firstAttrSoc.STUDENTS_ADDED_DURING_YEAR ?? "") : "",
+                    STUDENTS_GRADUATED: firstAttrSoc ? String(firstAttrSoc.STUDENTS_GRADUATED ?? "") : "",
+                    EXCH_STUD_REPTS: firstAttrSoc ? String(firstAttrSoc.EXCH_STUD_REPTS ?? "") : "",
+                    STUD_DISS_WTHD: firstAttrSoc ? String(firstAttrSoc.STUD_DISS_WTHD ?? "") : "",
+                    STUD_NOT_INV: firstAttrSoc ? String(firstAttrSoc.STUD_NOT_INV ?? "") : "",
+                    STUD_NOT_RETURN: firstAttrSoc ? String(firstAttrSoc.STUD_NOT_RETURN ?? "") : "",
                 });
             } catch (e) {
                 alert("Unauthorized");
@@ -157,7 +160,7 @@ export default function AnnualFormPage({ username, onLogout }) {
         }
 
         void loadAnnualData();
-    }, [schoolId, schoolYearId, onLogout]);
+    }, [schoolId, schoolYearId, gradeId, onLogout]);
 
     // Submit
     async function saveAAESection() {
@@ -169,8 +172,8 @@ export default function AnnualFormPage({ username, onLogout }) {
             const byKey = new Map();
             for (const r of aaeRows) byKey.set(`${r.ENROLLMENT_TYPE_CD}__${r.GENDER}`, r);
 
-            for (const t of ["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"]) {
-                for (const g of ["F", "M", "NB"]) {
+            for (const t of ["INQUIRIES", "FACULTYCHILD"]) {
+                for (const g of ["M", "F", "NB", "U"]) {
                     const key = `${t}__${g}`;
                     const cell = aaeGrid[t][g];
                     const existing = byKey.get(key);
@@ -210,7 +213,7 @@ export default function AnnualFormPage({ username, onLogout }) {
             const refreshed = await getAAE({ schoolId, schoolYearId });
             setAaeRows(refreshed);
 
-            setNotify("Saved Admissions → Enrollment section.");
+            setNotify("Saved Admissions: Enrollment section.");
         } catch (e) {
             setNotify(`Error saving AAE: ${String(e?.message ?? e)}`);
         }
@@ -223,6 +226,7 @@ export default function AnnualFormPage({ username, onLogout }) {
         const payload = {
             schoolId: Number(schoolId),
             schoolYearId: Number(schoolYearId),
+            ...(gradeId ? { GRADE_DEF_ID: Number(gradeId) } : {}),
             STUDENTS_ADDED_DURING_YEAR: Number(form.STUDENTS_ADDED_DURING_YEAR),
             STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUADATED ?? form.STUDENTS_GRADUATED), // safety
             EXCH_STUD_REPTS: Number(form.EXCH_STUD_REPTS),
@@ -276,6 +280,14 @@ export default function AnnualFormPage({ username, onLogout }) {
                     ) : (
                         <span>Select a year</span>
                     )}
+                    {"  •  "}
+                    {selectedGrade ? (
+                        <>
+                            <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id} (ID: {selectedGrade.id})
+                        </>
+                    ) : (
+                        <span>Select a grade</span>
+                    )}
                 </div>
             </div>
         );
@@ -285,9 +297,9 @@ export default function AnnualFormPage({ username, onLogout }) {
         return (
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
                 {[
-                    { key: "AAE", label: "Admissions → Enrollment (AAE)" },
-                    { key: "ATTR", label: "Enrollment → Attrition" },
-                    { key: "ATTR_SOC", label: "Enrollment → Attrition (SOC)" },
+                    { key: "AAE", label: "Admissions: Enrollment (AAE)" },
+                    { key: "ATTR", label: "Enrollment: Attrition" },
+                    { key: "ATTR_SOC", label: "Enrollment: Attrition (SOC)" },
                 ].map(({ key, label }) => (
                     <button
                         key={key}
@@ -336,6 +348,18 @@ export default function AnnualFormPage({ username, onLogout }) {
                         ))}
                     </select>
                 </label>
+
+                <label>
+                    Grade
+                    <br />
+                    <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
+                        {grades.map((g) => (
+                            <option key={g.id} value={String(g.id)}>
+                                {g.name ?? g.id} (ID: {g.id})
+                            </option>
+                        ))}
+                    </select>
+                </label>
             </div>
         );
     }
@@ -343,7 +367,7 @@ export default function AnnualFormPage({ username, onLogout }) {
     function AAESection() {
         return (
             <div>
-                <h3 style={{ marginTop: 0 }}>Admissions → Enrollment</h3>
+                <h3 style={{ marginTop: 0 }}>Admissions: Enrollment</h3>
                 <p style={{ marginTop: 0, opacity: 0.85 }}>
                     Enter the number enrolled for each Enrollment Type and Gender. Leave blank to remove that row.
                 </p>
@@ -353,16 +377,16 @@ export default function AnnualFormPage({ username, onLogout }) {
                         <thead>
                         <tr>
                             <th>ENROLLMENT_TYPE_CD</th>
-                            {["F", "M", "NB"].map((g) => (
+                            {["M", "F", "NB", "U"].map((g) => (
                                 <th key={g}>{g}</th>
                             ))}
                         </tr>
                         </thead>
                         <tbody>
-                        {["INQUIRIES", "COMPLETED_APP", "ACCEPTANCES", "NEW_ENROLLMENTS", "CONTRACTED_ENROLL"].map((t) => (
+                        {["INQUIRIES", "FACULTYCHILD"].map((t) => (
                             <tr key={t}>
                                 <td style={{ fontWeight: 600 }}>{t}</td>
-                                {["F", "M", "NB"].map((g) => {
+                                {["M", "F", "NB", "U"].map((g) => {
                                     return (
                                         <td key={g}>
                                             <input
@@ -460,7 +484,7 @@ export default function AnnualFormPage({ username, onLogout }) {
 
                     {section === "ATTR" && (
                         <AttritionForm
-                            title="Enrollment → Attrition"
+                            title="Enrollment: Attrition"
                             form={attrForm}
                             setForm={setAttrForm}
                             onSave={() => saveAttritionSection({ soc: false })}
@@ -469,7 +493,7 @@ export default function AnnualFormPage({ username, onLogout }) {
 
                     {section === "ATTR_SOC" && (
                         <AttritionForm
-                            title="Enrollment → Attrition (Students of Color)"
+                            title="Enrollment: Attrition (Students of Color)"
                             form={attrSocForm}
                             setForm={setAttrSocForm}
                             onSave={() => saveAttritionSection({ soc: true })}
