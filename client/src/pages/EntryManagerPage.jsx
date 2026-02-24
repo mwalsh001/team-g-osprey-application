@@ -392,7 +392,9 @@ export default function AnnualFormPage({ username, onLogout }) {
         console.log("sending data!")
         //console.log("displaySchoolId = "+displaySchoolId);
         console.log("e.target.value = "+e.target.value);
+        console.log(Number(e.target.value));
         const payload = {displaySchoolId: Number(e.target.value),}
+        console.log(payload);
         const res =  await chooseDisplaySchool(payload)
         console.log(res)
     }

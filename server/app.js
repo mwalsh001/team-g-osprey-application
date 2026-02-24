@@ -406,8 +406,26 @@ async function run() {
     });
 
     app.post("/api/chooseDisplaySchool", requireAuth, async(req, res) =>{
-        console.log(req.body)
-        res.json({displaySchoolId: req.body})
+        // console.log(req.query);
+        // console.log(req.body);
+        const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
+        const GENDER = "U";
+
+        const filter = { SCHOOL_ID, GENDER };
+
+        const rows = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, NR_ENROLLED: 1 } })  // only get these attributes of the object
+            .sort({ SCHOOL_YR_ID: 1 })  // sort the list to be in order of year
+            .toArray();
+        //console.log(rows);
+        // rows.map(r => ({
+
+        //     mongoId: r._id.toString(),
+        //     ...r
+        // }))
+
+        console.log(rows);
+        res.json(rows.map(obj => obj.NR_ENROLLED));
     })
 }
 
