@@ -16,6 +16,7 @@ import {
     getSchoolYears,
     chooseDisplaySchool,
 } from "../api/annualBenchmarkingApi.js";
+import Chart from 'https://cdn.jsdelivr.net/npm/chart.js/auto/+esm';
 
 // Helpers
 export default function AnnualFormPage({ username, onLogout }) {
@@ -76,6 +77,7 @@ export default function AnnualFormPage({ username, onLogout }) {
         () => grades.find((g) => String(g.id) === String(gradeId)),
         [grades, gradeId]
     );
+    let myChart;
 
     // load lookups
     useEffect(() => {
@@ -261,6 +263,45 @@ export default function AnnualFormPage({ username, onLogout }) {
         }
     }
 
+    async function sendDisplaySchool(e)
+    {
+        console.log("e:" + e.target.value)
+        // setDisplaySchoolId works for next render
+        // could use useEffect instead
+        setDisplaySchoolId(e.target.value)
+        console.log("sending data!")
+        //console.log("displaySchoolId = "+displaySchoolId);
+        console.log("e.target.value = "+e.target.value);
+        console.log(Number(e.target.value));
+        const payload = {displaySchoolId: Number(e.target.value),}
+        console.log(payload);
+        const res =  await chooseDisplaySchool(payload)
+        console.log(res)
+
+        const existingChart = Chart.getChart("enrollmentRate");
+
+        // Create graph
+        if (existingChart) {
+            existingChart.destroy();
+        }
+        myChart = new Chart(
+            document.getElementById('enrollmentRate'),
+            {
+                type: 'bar',
+                data: {
+                    labels: res.map(row => row.SCHOOL_YR_ID),
+                    datasets: [
+                        {
+                            label: 'Enrollment by year',
+                            data: res.map(row => row.NR_ENROLLED)
+                        }
+                    ]
+                }
+            }
+        );
+
+    }
+
     // -------------------- UI --------------------
     function AnnualContextHeader() {
         return (
@@ -365,41 +406,28 @@ export default function AnnualFormPage({ username, onLogout }) {
                 </label>
             </div>
         );
-    }function AnnualGraphSelector() {
+    }
+
+    function AnnualGraphSelector() {
         return (
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
-                <label>
-                    School
-                    <br />
-                    <select value={displaySchoolId} onChange={(e) => sendDisplaySchool(e)}>
-                        {schools.map((s) => (
-                            <option key={s.id} value={String(s.id)}>
-                                {s.name} (ID: {s.id})
-                            </option>
-                        ))}
-                    </select>
-                </label>
+            <div>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
+                    <label>
+                        School
+                        <br />
+                        <select value={displaySchoolId} onChange={(e) => sendDisplaySchool(e)}>
+                            {schools.map((s) => (
+                                <option key={s.id} value={String(s.id)}>
+                                    {s.name} (ID: {s.id})
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
+                <div><canvas id="enrollmentRate"></canvas></div>
             </div>
         );
     }
-
-    async function sendDisplaySchool(e)
-    {
-        console.log("e:" + e.target.value)
-        // setDisplaySchoolId works for next render
-        // could use useEffect instead
-        setDisplaySchoolId(e.target.value)
-        console.log("sending data!")
-        //console.log("displaySchoolId = "+displaySchoolId);
-        console.log("e.target.value = "+e.target.value);
-        console.log(Number(e.target.value));
-        const payload = {displaySchoolId: Number(e.target.value),}
-        console.log(payload);
-        const res =  await chooseDisplaySchool(payload)
-        console.log(res)
-    }
-
-
 
     function AAESection() {
         return (

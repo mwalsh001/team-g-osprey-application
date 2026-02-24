@@ -413,19 +413,22 @@ async function run() {
 
         const filter = { SCHOOL_ID, GENDER };
 
-        const rows = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, NR_ENROLLED: 1 } })  // only get these attributes of the object
+        let rows = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1 } })  // only get these attributes of the object
             .sort({ SCHOOL_YR_ID: 1 })  // sort the list to be in order of year
             .toArray();
         //console.log(rows);
         // rows.map(r => ({
-
         //     mongoId: r._id.toString(),
         //     ...r
         // }))
+        rows = rows.filter(e => e.NR_ENROLLED !== null);  // filter the null values for NR_ENROLLED
 
         console.log(rows);
-        res.json(rows.map(obj => obj.NR_ENROLLED));
+        res.json(rows.map(obj => ({
+            SCHOOL_YR_ID: obj.SCHOOL_YR_ID,
+            NR_ENROLLED: obj.NR_ENROLLED
+        })));
     })
 }
 
