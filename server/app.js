@@ -179,12 +179,17 @@ async function run() {
 // ENROLL_ATTRITION
 
     app.get("/api/attrition", requireAuth, async (req, res) => {
-        const { schoolId, schoolYearId } = req.query;
+        const { schoolId, schoolYearId, gradeId } = req.query;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const rows = await eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
+        const filter = { SCHOOL_ID, SCHOOL_YR_ID };
+        if (gradeId !== undefined && gradeId !== null && gradeId !== "") {
+            filter.GRADE_DEF_ID = Number(gradeId);
+        }
+
+        const rows = await eaCol.find(filter).toArray();
 
         res.json(rows.map(r => ({
             mongoId: r._id.toString(),
@@ -289,12 +294,17 @@ async function run() {
 // ENROLL_ATTRITION_SOC
 
     app.get("/api/attritionSoc", requireAuth, async (req, res) => {
-        const { schoolId, schoolYearId } = req.query;
+        const { schoolId, schoolYearId, gradeId } = req.query;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const rows = await easocCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
+        const filter = { SCHOOL_ID, SCHOOL_YR_ID };
+        if (gradeId !== undefined && gradeId !== null && gradeId !== "") {
+            filter.GRADE_DEF_ID = Number(gradeId);
+        }
+
+        const rows = await easocCol.find(filter).toArray();
 
         res.json(rows.map(r => ({
             mongoId: r._id.toString(),

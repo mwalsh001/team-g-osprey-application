@@ -1,5 +1,5 @@
 import {useState} from "react";
-import { login } from "../api/entryApi.js";
+import { login } from "../api/loginApi.js";
 import LoginForm from "../components/LoginForm.jsx";
 
 export default function LoginPage({ onLogin }) {
