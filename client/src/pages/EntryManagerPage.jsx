@@ -362,9 +362,13 @@ export default function AnnualFormPage({ username, onLogout }) {
     async function sendDisplaySchool(e)
     {
         console.log("e:" + e.target.value)
+        // setDisplaySchoolId works for next render
+        // could use useEffect instead
         setDisplaySchoolId(e.target.value)
         console.log("sending data!")
-        const payload = {displaySchoolId: Number(displaySchoolId),}
+        //console.log("displaySchoolId = "+displaySchoolId);
+        console.log("e.target.value = "+e.target.value);
+        const payload = {displaySchoolId: Number(e.target.value),}
         const res =  await chooseDisplaySchool(payload)
         console.log(res)
     }
