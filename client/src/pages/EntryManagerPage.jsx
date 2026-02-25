@@ -228,7 +228,7 @@ export default function AnnualFormPage({ username, onLogout }) {
             schoolYearId: Number(schoolYearId),
             ...(gradeId ? { GRADE_DEF_ID: Number(gradeId) } : {}),
             STUDENTS_ADDED_DURING_YEAR: Number(form.STUDENTS_ADDED_DURING_YEAR),
-            STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUADATED ?? form.STUDENTS_GRADUATED), // safety
+            STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUATED ?? form.STUDENTS_GRADUATED), // safety
             EXCH_STUD_REPTS: Number(form.EXCH_STUD_REPTS),
             STUD_DISS_WTHD: Number(form.STUD_DISS_WTHD),
             STUD_NOT_INV: Number(form.STUD_NOT_INV),
@@ -395,10 +395,12 @@ export default function AnnualFormPage({ username, onLogout }) {
                                                 value={aaeGrid[t][g] ?? ""}
                                                 onChange={(e) => {
                                                     const next = e.target.value;
-                                                    setAaeGrid((prev) => ({
-                                                        ...prev,
-                                                        [t]: { ...prev[t], [g]: next },
-                                                    }));
+                                                    if (next === "" || /^\d+$/.test(next)) {
+                                                        setAaeGrid((prev) => ({
+                                                            ...prev,
+                                                            [t]: {...prev[t], [g]: next},
+                                                        }));
+                                                    }
                                                 }}
                                                 placeholder="(blank = none)"
                                                 style={{
@@ -439,7 +441,9 @@ export default function AnnualFormPage({ username, onLogout }) {
                         value={form[name] ?? ""}
                         onChange={(e) => {
                             const next = e.target.value;
-                            setForm((prev) => ({ ...prev, [name]: next }));
+                            if (next === "" || /^\d+$/.test(next)) {
+                                setForm((prev) => ({ ...prev, [name]: next }));
+                            }
                         }}
                         style={{ width: "240px", border: "1px solid #ccc" }}
                     />
