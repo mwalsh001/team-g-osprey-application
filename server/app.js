@@ -4,7 +4,6 @@ const {ObjectId} = require("mongodb");
 const MongoClient = require('mongodb').MongoClient;
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const bcrypt = require ("bcrypt");
 const app = express();
 
 app.use(express.json());
@@ -37,14 +36,20 @@ async function run() {
 
     // Login
     app.post("/api/login", async (req, res) => {
-        const {username, password} = req.body;
+        const {username, password, role} = req.body;
 
+        if (!username || !password || !["school", "admin"].includes(role)){
+            return res.json({
+                success: false,
+                message: "valid username, password and role are required"
+            });
+        }
         let user = await usersCollection.findOne({username});
         const payload = {
-            username
+            username, role
         }
         if (!user) {
-            await usersCollection.insertOne({username, password});
+            await usersCollection.insertOne({username, password, role});
             const token = jwt.sign(
                 payload,
                 process.env.JWT_SECRET,
@@ -56,7 +61,11 @@ async function run() {
         if (user.password !== password) {
             return res.json({ success: false, message: "Wrong password" });
         }
-
+        if (user.role !== role) {
+            return res.json({
+                success: false, message: `This account is not registered as a ${role}`
+            });
+        }
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
