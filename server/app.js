@@ -424,12 +424,57 @@ async function run() {
         // }))
         rows = rows.filter(e => e.NR_ENROLLED !== null);  // filter the null values for NR_ENROLLED
 
-        console.log(rows);
+        //console.log(rows);
         res.json(rows.map(obj => ({
             SCHOOL_YR_ID: obj.SCHOOL_YR_ID,
             NR_ENROLLED: obj.NR_ENROLLED
         })));
     })
+
+    app.post("/api/chooseDisplayYear", requireAuth, async(req, res) =>{
+        const SCHOOL_ID = req.body.displaySchoolId;
+        const SCHOOL_YR_ID = req.body.displaySchoolYear;
+
+        // In database, there could be a value for INQUIRIES and FACULTYCHILD
+        // aaeCol.find could return up to 2 objects
+        let GENDER = "M";
+        let filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+        let gender_m = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            .toArray();
+        //console.log(gender_m);
+        // Get a single value for how many total males are enrolled
+        const val_m = gender_m.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+            }, 0);
+
+        // Repeat process for females and non-binary students
+        GENDER = "F";
+        filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+        let gender_f = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            .toArray();
+        //console.log(gender_f);
+        const val_f = gender_f.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        GENDER = "NB";
+        filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+        let gender_nb = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            .toArray();
+        //console.log(gender_nb);
+        const val_nb = gender_nb.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        // Return an array of the NR_ENROLLED
+        let arr = [val_m, val_f, val_nb];
+        console.log(arr);
+        res.json(arr);
+    })
+
 }
 
 const clientDist = path.join(__dirname, "..", "client", "dist");

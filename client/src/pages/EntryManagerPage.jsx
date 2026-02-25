@@ -15,6 +15,7 @@ import {
     getSchools,
     getSchoolYears,
     chooseDisplaySchool,
+    chooseDisplayYear,
 } from "../api/annualBenchmarkingApi.js";
 import Chart from 'https://cdn.jsdelivr.net/npm/chart.js/auto/+esm';
 
@@ -29,6 +30,7 @@ export default function AnnualFormPage({ username, onLogout }) {
     const [gradeId, setGradeId] = useState("");
 
     const [displaySchoolId, setDisplaySchoolId] = useState("");
+    const [displaySchoolYear, setDisplaySchoolYear] = useState("");
 
     const [section, setSection] = useState("AAE");
 
@@ -77,7 +79,6 @@ export default function AnnualFormPage({ username, onLogout }) {
         () => grades.find((g) => String(g.id) === String(gradeId)),
         [grades, gradeId]
     );
-    let myChart;
 
     // load lookups
     useEffect(() => {
@@ -263,44 +264,82 @@ export default function AnnualFormPage({ username, onLogout }) {
         }
     }
 
-    async function sendDisplaySchool(e)
-    {
-        console.log("e:" + e.target.value)
-        // setDisplaySchoolId works for next render
-        // could use useEffect instead
-        setDisplaySchoolId(e.target.value)
-        console.log("sending data!")
-        //console.log("displaySchoolId = "+displaySchoolId);
-        console.log("e.target.value = "+e.target.value);
-        console.log(Number(e.target.value));
-        const payload = {displaySchoolId: Number(e.target.value),}
-        console.log(payload);
-        const res =  await chooseDisplaySchool(payload)
-        console.log(res)
-
-        const existingChart = Chart.getChart("enrollmentRate");
-
-        // Create graph
-        if (existingChart) {
-            existingChart.destroy();
-        }
-        myChart = new Chart(
-            document.getElementById('enrollmentRate'),
-            {
-                type: 'bar',
-                data: {
-                    labels: res.map(row => row.SCHOOL_YR_ID),
-                    datasets: [
-                        {
-                            label: 'Enrollment by year',
-                            data: res.map(row => row.NR_ENROLLED)
-                        }
-                    ]
-                }
-            }
-        );
-
+    // Setting hooks for graphs
+    async function sendDisplaySchool(e) {
+        setDisplaySchoolId(Number(e.target.value));
     }
+
+    async function sendDisplayYear(e) {
+        setDisplaySchoolYear(Number(e.target.value));
+    }
+
+    // Displaying graphs
+    useEffect(() => {
+        async function updateEnrollmentOverTime() {
+            if (!displaySchoolId) return;
+            try {
+                const payload = { displaySchoolId: displaySchoolId };
+                const res = await chooseDisplaySchool(payload);
+                if (res) {
+                    const existingChart = Chart.getChart("enrollmentRate");
+                    if (existingChart) existingChart.destroy();
+                    new Chart(document.getElementById('enrollmentRate'), {
+                        type: 'bar',
+                        data: {
+                            labels: res.map(row => row.SCHOOL_YR_ID),
+                            datasets: [{
+                                label: 'Enrollment by year',
+                                data: res.map(row => row.NR_ENROLLED)
+                            }]
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Line chart failed:", err);
+            }
+        }
+        updateEnrollmentOverTime();
+    }, [displaySchoolId, displaySchoolYear]);
+
+    useEffect(() => {
+        async function updateEnrollmentByGender() {
+            if (!displaySchoolId || !displaySchoolYear) return;
+
+            const payload = {
+                displaySchoolId: Number(displaySchoolId),
+                displaySchoolYear: Number(displaySchoolYear)
+            };
+
+            const res = await chooseDisplayYear(payload);
+            const ctx = document.getElementById('enrollmentByGender');
+
+            console.log(res);
+            // Logic check: verify res.body is actually an array
+            if (ctx && res && Array.isArray(res)) {
+                const existing = Chart.getChart("enrollmentByGender");
+                if (existing) {
+                    existing.destroy();
+                }
+
+                new Chart(
+                        ctx,
+                        {
+                            type: 'pie',
+                            data: {
+                                labels: ['Male', 'Female', 'Non-Binary'],
+                                datasets: [
+                                    {
+                                        label: 'School Enrollment by Gender',
+                                        data: res
+                                    }
+                                ]
+                            }
+                        }
+                    );
+            }
+        }
+        updateEnrollmentByGender();
+    }, [displaySchoolId, displaySchoolYear]);
 
     // -------------------- UI --------------------
     function AnnualContextHeader() {
@@ -408,7 +447,7 @@ export default function AnnualFormPage({ username, onLogout }) {
         );
     }
 
-    function AnnualGraphSelector() {
+    function AnnualEnrollmentRateGraphSelector() {
         return (
             <div>
                 <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
@@ -425,6 +464,27 @@ export default function AnnualFormPage({ username, onLogout }) {
                     </label>
                 </div>
                 <div><canvas id="enrollmentRate"></canvas></div>
+            </div>
+        );
+    }
+
+    function DashboardGraphSelectors() {
+        return (
+            <div>
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
+                    <label>
+                        School Year
+                        <br />
+                        <select value={displaySchoolYear} onChange={(e) => sendDisplayYear(e)}>
+                            {years.map((y) => (
+                                <option key={y.id} value={String(y.id)}>
+                                    {y.year ?? y.id} (ID: {y.id})
+                                </option>
+                            ))}
+                        </select>
+                    </label>
+                </div>
+                <div><canvas id="enrollmentByGender"></canvas></div>
             </div>
         );
     }
@@ -565,7 +625,8 @@ export default function AnnualFormPage({ username, onLogout }) {
                         />
                     )}
                 </div>
-                <AnnualGraphSelector/>
+                <AnnualEnrollmentRateGraphSelector/>
+                <DashboardGraphSelectors/>
             </div>
         </>
     );
