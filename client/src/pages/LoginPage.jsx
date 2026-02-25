@@ -7,21 +7,21 @@ export default function LoginPage({ onLogin }) {
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
 
-    async function handleSubmit(entry) {
-        entry.preventDefault();
+    async function handleSubmit(role) {
         setError(null);
 
-        const response = await login(username, password);
+        const response = await login(username, password, role);
         if (!response.success) {
-            setError("Inocrrect username or password.");
+            setError("Incorrect username, password, or role.");
             return;
         }
         if (response.newUser) {
-            alert(`No account existing for "${username}". A new one was created.`);
+            alert(`No account existing for "${username}" as ${role}. A new one was created.`);
         }
 
         localStorage.setItem("token", response.token);
         localStorage.setItem("username", username);
+        localStorage.setItem("role", response.role || role);
         onLogin(username);
     }
 
