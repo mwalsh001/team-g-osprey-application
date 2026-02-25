@@ -6,7 +6,8 @@ export default function LoginForm(
         error,
         onUsernameChange,
         onPasswordChange,
-        onSubmit,
+        onSchoolLogin,
+        onAdminLogin,
         primaryLabel = "School Login",
         secondaryLabel = "Admin Login",
     }) {
@@ -17,7 +18,7 @@ export default function LoginForm(
 
             {error && <p>{error}</p>}
 
-            <form onSubmit={onSubmit}>
+            <form>
                 <div>
                     <label>Username</label>
                     <input
@@ -38,8 +39,8 @@ export default function LoginForm(
                 </div>
 
                 <div>
-                    <button type="submit">{primaryLabel}</button>
-                    <button type="submit">{secondaryLabel}</button>
+                    <button type="button" onClick={onSchoolLogin}>{primaryLabel}</button>
+                    <button type="button" onClick={onAdminLogin}>{secondaryLabel}</button>
                 </div>
             </form>
         </div>

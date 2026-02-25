@@ -33,7 +33,8 @@ export default function LoginPage({ onLogin }) {
             error={error}
             onUsernameChange={setUsername}
             onPasswordChange={setPassword}
-            onSubmit={handleSubmit}
+            onSchoolLogin={() => void handleSubmit("school")}
+            onAdminLogin={() => void handleSubmit("admin")}
             primaryLabel="School Login"
             secondaryLabel="Admin Login"
         />
