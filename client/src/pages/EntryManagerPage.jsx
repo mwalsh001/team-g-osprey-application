@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AppHeader from "../components/AppHeader.jsx";
+import Sidebar from "../components/SideBar.jsx";
+
 import {
     addAAE,
     addAttrition,
@@ -13,14 +15,12 @@ import {
     getAttritionSoc,
     getGrades,
     getSchools,
-    getSchoolYears,
-    chooseDisplaySchool,
-    chooseDisplayYear,
+    getSchoolYears
 } from "../api/annualBenchmarkingApi.js";
-import Chart from 'https://cdn.jsdelivr.net/npm/chart.js/auto/+esm';
 
 // Helpers
 export default function AnnualFormPage({ username, onLogout }) {
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
     const [grades, setGrades] = useState([]);
@@ -28,9 +28,6 @@ export default function AnnualFormPage({ username, onLogout }) {
     const [schoolId, setSchoolId] = useState("");
     const [schoolYearId, setSchoolYearId] = useState("");
     const [gradeId, setGradeId] = useState("");
-
-    const [displaySchoolId, setDisplaySchoolId] = useState("");
-    const [displaySchoolYear, setDisplaySchoolYear] = useState("");
 
     const [section, setSection] = useState("AAE");
 
@@ -264,82 +261,6 @@ export default function AnnualFormPage({ username, onLogout }) {
         }
     }
 
-    // Setting hooks for graphs
-    async function sendDisplaySchool(e) {
-        setDisplaySchoolId(Number(e.target.value));
-    }
-
-    async function sendDisplayYear(e) {
-        setDisplaySchoolYear(Number(e.target.value));
-    }
-
-    // Displaying graphs
-    useEffect(() => {
-        async function updateEnrollmentOverTime() {
-            if (!displaySchoolId) return;
-            try {
-                const payload = { displaySchoolId: displaySchoolId };
-                const res = await chooseDisplaySchool(payload);
-                if (res) {
-                    const existingChart = Chart.getChart("enrollmentRate");
-                    if (existingChart) existingChart.destroy();
-                    new Chart(document.getElementById('enrollmentRate'), {
-                        type: 'bar',
-                        data: {
-                            labels: res.map(row => row.SCHOOL_YR_ID),
-                            datasets: [{
-                                label: 'Enrollment by year',
-                                data: res.map(row => row.NR_ENROLLED)
-                            }]
-                        }
-                    });
-                }
-            } catch (err) {
-                console.error("Line chart failed:", err);
-            }
-        }
-        updateEnrollmentOverTime();
-    }, [displaySchoolId, displaySchoolYear]);
-
-    useEffect(() => {
-        async function updateEnrollmentByGender() {
-            if (!displaySchoolId || !displaySchoolYear) return;
-
-            const payload = {
-                displaySchoolId: Number(displaySchoolId),
-                displaySchoolYear: Number(displaySchoolYear)
-            };
-
-            const res = await chooseDisplayYear(payload);
-            const ctx = document.getElementById('enrollmentByGender');
-
-            console.log(res);
-            // Logic check: verify res.body is actually an array
-            if (ctx && res && Array.isArray(res)) {
-                const existing = Chart.getChart("enrollmentByGender");
-                if (existing) {
-                    existing.destroy();
-                }
-
-                new Chart(
-                        ctx,
-                        {
-                            type: 'pie',
-                            data: {
-                                labels: ['Male', 'Female', 'Non-Binary'],
-                                datasets: [
-                                    {
-                                        label: 'School Enrollment by Gender',
-                                        data: res
-                                    }
-                                ]
-                            }
-                        }
-                    );
-            }
-        }
-        updateEnrollmentByGender();
-    }, [displaySchoolId, displaySchoolYear]);
 
     // -------------------- UI --------------------
     function AnnualContextHeader() {
@@ -452,47 +373,6 @@ export default function AnnualFormPage({ username, onLogout }) {
         );
     }
 
-    function AnnualEnrollmentRateGraphSelector() {
-        return (
-            <div>
-                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
-                    <label>
-                        School
-                        <br />
-                        <select value={displaySchoolId} onChange={(e) => sendDisplaySchool(e)}>
-                            {schools.map((s) => (
-                                <option key={s.id} value={String(s.id)}>
-                                    {s.name} (ID: {s.id})
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                </div>
-                <div><canvas id="enrollmentRate"></canvas></div>
-            </div>
-        );
-    }
-
-    function DashboardGraphSelectors() {
-        return (
-            <div>
-                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
-                    <label>
-                        School Year
-                        <br />
-                        <select value={displaySchoolYear} onChange={(e) => sendDisplayYear(e)}>
-                            {years.map((y) => (
-                                <option key={y.id} value={String(y.id)}>
-                                    {y.year ?? y.id} (ID: {y.id})
-                                </option>
-                            ))}
-                        </select>
-                    </label>
-                </div>
-                <div><canvas id="enrollmentByGender"></canvas></div>
-            </div>
-        );
-    }
 
     function AAESection() {
         return (
@@ -608,45 +488,50 @@ export default function AnnualFormPage({ username, onLogout }) {
         <>
             <AppHeader username={username} onLogout={onLogout} />
 
-            <div className="container my-4">
-                <AnnualContextHeader />
-                <AnnualSelectors />
-                <SectionTabs />
-
-                {notify && (
-                    <div className="alert alert-info py-2">
-                        {notify}
-                    </div>
-                )}
-
-                <div className="card">
-                    <div className="card-body">
-
-                        {section === "AAE" && <AAESection />}
-
-                        {section === "ATTR" && (
-                            <AttritionForm
-                                title="Enrollment: Attrition"
-                                form={attrForm}
-                                setForm={setAttrForm}
-                                onSave={() => saveAttritionSection({ soc: false })}
-                            />
-                        )}
-
-                    {section === "ATTR_SOC" && (
-                        <AttritionForm
-                            title="Enrollment: Attrition (Students of Color)"
-                            form={attrSocForm}
-                            setForm={setAttrSocForm}
-                            onSave={() => saveAttritionSection({ soc: true })}
+            <div className="container-fluid">
+                <div className="row">
+                    <div className="col-auto p-0">
+                        <Sidebar
+                            collapsed={sidebarCollapsed}
+                            onToggle={() => setSidebarCollapsed((v) => !v)}
                         />
-                    )}
-                </div>
-                <AnnualEnrollmentRateGraphSelector/>
-                <DashboardGraphSelectors/>
-            </div>
-            </div>
+                    </div>
 
+                    <div className="col">
+                        <div className="container my-4">
+                            <AnnualContextHeader />
+                            <AnnualSelectors />
+                            <SectionTabs />
+
+                            {notify && <div className="alert alert-info py-2">{notify}</div>}
+
+                            <div className="card">
+                                <div className="card-body">
+                                    {section === "AAE" && <AAESection />}
+
+                                    {section === "ATTR" && (
+                                        <AttritionForm
+                                            title="Enrollment: Attrition"
+                                            form={attrForm}
+                                            setForm={setAttrForm}
+                                            onSave={() => saveAttritionSection({ soc: false })}
+                                        />
+                                    )}
+
+                                    {section === "ATTR_SOC" && (
+                                        <AttritionForm
+                                            title="Enrollment: Attrition (Students of Color)"
+                                            form={attrSocForm}
+                                            setForm={setAttrSocForm}
+                                            onSave={() => saveAttritionSection({ soc: true })}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </>
     );
 }
