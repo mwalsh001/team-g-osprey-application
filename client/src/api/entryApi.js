@@ -51,3 +51,13 @@ function authHeaders() {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
+export async function createSchoolAccount(username, password) {
+    const response = await fetch("/api/admin/create-school", {
+        method: 'POST',
+        headers: {"Content-Type": "application/json", ...authHeaders()},
+        body: JSON.stringify({username, password}),
+    });
+    if (!response.ok) throw new Error("Create school account failed");
+    return response.json();
+}

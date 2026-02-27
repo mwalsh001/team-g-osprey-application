@@ -24,6 +24,40 @@ function requireAuth(req, res, next) {
     }
 }
 
+//Create School user
+app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
+    const {username, password} = req.body;
+    if (!username || !password) {
+        return res.status(400).json({
+            success: false,
+            message: "username and password are required"
+        });
+    }
+    const existingUser = await usersCollection.findOne({username});
+    if (existingUser) {
+        return res.status(409).json({
+            success: false,
+            message: "Account with this username already exists"
+        });
+    }
+    await usersCollection.insertOne({
+        username, password, role: "school"
+    });
+    return res.json({
+        success: true, message: `School account created`
+    });
+});
+
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== "admin") {
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+    }
+    next();
+}
+
 const url = process.env.MONGODB_URI;
 const dbconnect = new MongoClient(url);
 let usersCollection = null;

@@ -3,7 +3,8 @@ import {
     getEntries,
     addEntry,
     editEntry,
-    deleteEntry
+    deleteEntry,
+    createSchoolAccount
 } from "../api/entryApi";
 import AppHeader from "../components/AppHeader.jsx";
 import EntryForm from "../components/EntryForm.jsx";
@@ -18,6 +19,8 @@ export default function EntryManagerPage({ username, onLogout }) {
     const [date, setDate] = useState("");
     const [valueA, setValueA] = useState("");
     const [valueB, setValueB] = useState("");
+    const [schoolUsername, setSchoolUsername] = useState("");
+    const [schoolPassword, setSchoolPassword] = useState("");
 
     useEffect(() => {
         async function load() {
@@ -93,11 +96,31 @@ export default function EntryManagerPage({ username, onLogout }) {
         setEditingId(entry.id);
         setNotify("");
     };
+    const handleCreateSchoolUser = async (entry) => {
+        entry.preventDefault();
+        try {
+            await createSchoolAccount(schoolUsername, schoolPassword);
+            setNotify(`School account "${schoolUsername}" created successfully`);
+            setSchoolUsername("");
+            setSchoolPassword("");
+        } catch (e) {
+            setNotify("Failed to create the school account");
+        }
+    };
 
     return (
         <>
             <AppHeader username={username} onLogout={onLogout}/>
             {notify && <p>{notify}</p>}
+            {isAdmin && (
+                <form onSubmit={handleCreateSchoolUser}>
+                    <h3>Create New School User Account</h3>
+                    <input value={schoolUsername} onChange={(entry) => setSchoolUsername(entry.target.value)}/>
+                    <input type="password" value={schoolPassword}
+                           onChange={(entry) => setSchoolPassword(entry.target.value)}/>
+                    <button type="submit"> Create School User</button>
+                </form>
+            )}
 
             <EntryForm
                 date={date}
