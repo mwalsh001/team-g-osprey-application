@@ -488,33 +488,33 @@ export default function AnnualFormPage({ username, onLogout }) {
         <>
             <AppHeader username={username} onLogout={onLogout} />
 
-            <div className="container-fluid">
-                <div className="row">
-                    <div className="col-auto p-0">
+            <div className="container-fluid p-0">
+                <div className="d-flex" style={{minHeight: "100vh"}}>
+                    <div style={{flex: "0 0 auto"}}>
                         <Sidebar
                             collapsed={sidebarCollapsed}
                             onToggle={() => setSidebarCollapsed((v) => !v)}
                         />
                     </div>
 
-                    <div className="col">
+                    <main className="flex-grow-1" style={{minWidth: 0}}>
                         <div className="container my-4">
-                            <AnnualContextHeader />
-                            <AnnualSelectors />
-                            <SectionTabs />
+                            <AnnualContextHeader/>
+                            <AnnualSelectors/>
+                            <SectionTabs/>
 
                             {notify && <div className="alert alert-info py-2">{notify}</div>}
 
                             <div className="card">
                                 <div className="card-body">
-                                    {section === "AAE" && <AAESection />}
+                                    {section === "AAE" && <AAESection/>}
 
                                     {section === "ATTR" && (
                                         <AttritionForm
                                             title="Enrollment: Attrition"
                                             form={attrForm}
                                             setForm={setAttrForm}
-                                            onSave={() => saveAttritionSection({ soc: false })}
+                                            onSave={() => saveAttritionSection({soc: false})}
                                         />
                                     )}
 
@@ -523,13 +523,13 @@ export default function AnnualFormPage({ username, onLogout }) {
                                             title="Enrollment: Attrition (Students of Color)"
                                             form={attrSocForm}
                                             setForm={setAttrSocForm}
-                                            onSave={() => saveAttritionSection({ soc: true })}
+                                            onSave={() => saveAttritionSection({soc: true})}
                                         />
                                     )}
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </main>
                 </div>
             </div>
         </>
