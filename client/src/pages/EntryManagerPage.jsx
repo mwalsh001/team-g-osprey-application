@@ -234,7 +234,7 @@ export default function AnnualFormPage({ username, onLogout }) {
             schoolYearId: Number(schoolYearId),
             ...(gradeId ? { GRADE_DEF_ID: Number(gradeId) } : {}),
             STUDENTS_ADDED_DURING_YEAR: Number(form.STUDENTS_ADDED_DURING_YEAR),
-            STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUADATED ?? form.STUDENTS_GRADUATED), // safety
+            STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUATED ?? form.STUDENTS_GRADUATED), // safety
             EXCH_STUD_REPTS: Number(form.EXCH_STUD_REPTS),
             STUD_DISS_WTHD: Number(form.STUD_DISS_WTHD),
             STUD_NOT_INV: Number(form.STUD_NOT_INV),
@@ -344,18 +344,17 @@ export default function AnnualFormPage({ username, onLogout }) {
     // -------------------- UI --------------------
     function AnnualContextHeader() {
         return (
-            <div style={{ marginBottom: "1rem" }}>
-                <h2 style={{ margin: 0 }}>Annual Benchmarking Form</h2>
-                <div style={{ opacity: 0.85 }}>
+            <div className="mb-4">
+                <h2 className="mb-1">Annual Benchmarking Form</h2>
+                <div className="text-muted">
                     {selectedSchool ? (
                         <>
-                            <strong>School:</strong> {selectedSchool.name} (ID: {selectedSchool.id}){" "}
-                            {selectedSchool.region ? `| Region: ${selectedSchool.region}` : ""}
+                            <strong>School:</strong> {selectedSchool.name} (ID: {selectedSchool.id})
                         </>
                     ) : (
                         <span>Select a school</span>
                     )}
-                    {"  •  "}
+                    {" • "}
                     {selectedYear ? (
                         <>
                             <strong>Year:</strong> {selectedYear.year ?? selectedYear.id} (ID: {selectedYear.id})
@@ -363,7 +362,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     ) : (
                         <span>Select a year</span>
                     )}
-                    {"  •  "}
+                    {" • "}
                     {selectedGrade ? (
                         <>
                             <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id} (ID: {selectedGrade.id})
@@ -378,24 +377,21 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     function SectionTabs() {
         return (
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+            <div className="btn-group mb-4 flex-wrap">
                 {[
-                    { key: "AAE", label: "Admissions: Enrollment (AAE)" },
-                    { key: "ATTR", label: "Enrollment: Attrition" },
-                    { key: "ATTR_SOC", label: "Enrollment: Attrition (SOC)" },
-                ].map(({ key, label }) => (
+                    {key: "AAE", label: "Admissions: Enrollment (AAE)"},
+                    {key: "ATTR", label: "Enrollment: Attrition"},
+                    {key: "ATTR_SOC", label: "Enrollment: Attrition (SOC)"},
+                ].map(({key, label}) => (
                     <button
                         key={key}
                         type="button"
+                        className={`btn ${
+                            section === key ? "btn-primary" : "btn-outline-primary"
+                        }`}
                         onClick={() => {
                             setSection(key);
-                                        setNotify("");
-                        }}
-                        style={{
-                            padding: "0.5rem 0.75rem",
-                            border: "1px solid #ccc",
-                            background: section === key ? "#eee" : "white",
-                            cursor: "pointer",
+                            setNotify("");
                         }}
                     >
                         {label}
@@ -407,42 +403,51 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     function AnnualSelectors() {
         return (
-            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "end", marginBottom: "1rem" }}>
-                <label>
-                    School
-                    <br />
-                    <select value={schoolId} onChange={(e) => setSchoolId(e.target.value)}>
+            <div className="row g-3 mb-4">
+                <div className="col-md-4">
+                    <label className="form-label">School</label>
+                    <select
+                        className="form-select"
+                        value={schoolId}
+                        onChange={(e) => setSchoolId(e.target.value)}
+                    >
                         {schools.map((s) => (
                             <option key={s.id} value={String(s.id)}>
                                 {s.name} (ID: {s.id})
                             </option>
                         ))}
                     </select>
-                </label>
+                </div>
 
-                <label>
-                    School Year
-                    <br />
-                    <select value={schoolYearId} onChange={(e) => setSchoolYearId(e.target.value)}>
+                <div className="col-md-4">
+                    <label className="form-label">School Year</label>
+                    <select
+                        className="form-select"
+                        value={schoolYearId}
+                        onChange={(e) => setSchoolYearId(e.target.value)}
+                    >
                         {years.map((y) => (
                             <option key={y.id} value={String(y.id)}>
                                 {y.year ?? y.id} (ID: {y.id})
                             </option>
                         ))}
                     </select>
-                </label>
+                </div>
 
-                <label>
-                    Grade
-                    <br />
-                    <select value={gradeId} onChange={(e) => setGradeId(e.target.value)}>
+                <div className="col-md-4">
+                    <label className="form-label">Grade</label>
+                    <select
+                        className="form-select"
+                        value={gradeId}
+                        onChange={(e) => setGradeId(e.target.value)}
+                    >
                         {grades.map((g) => (
                             <option key={g.id} value={String(g.id)}>
                                 {g.name ?? g.id} (ID: {g.id})
                             </option>
                         ))}
                     </select>
-                </label>
+                </div>
             </div>
         );
     }
@@ -492,13 +497,13 @@ export default function AnnualFormPage({ username, onLogout }) {
     function AAESection() {
         return (
             <div>
-                <h3 style={{ marginTop: 0 }}>Admissions: Enrollment</h3>
-                <p style={{ marginTop: 0, opacity: 0.85 }}>
+                <h3 style={{marginTop: 0}}>Admissions: Enrollment</h3>
+                <p style={{marginTop: 0, opacity: 0.85}}>
                     Enter the number enrolled for each Enrollment Type and Gender. Leave blank to remove that row.
                 </p>
 
-                <div style={{ overflowX: "auto" }}>
-                    <table border="1" cellPadding="8" style={{ borderCollapse: "collapse", minWidth: 700 }}>
+                <div style={{overflowX: "auto"}}>
+                    <table className="table table-bordered table-sm align-middle">
                         <thead>
                         <tr>
                             <th>ENROLLMENT_TYPE_CD</th>
@@ -510,7 +515,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                         <tbody>
                         {["INQUIRIES", "FACULTYCHILD"].map((t) => (
                             <tr key={t}>
-                                <td style={{ fontWeight: 600 }}>{t}</td>
+                                <td style={{fontWeight: 600}}>{t}</td>
                                 {["M", "F", "NB", "U"].map((g) => {
                                     return (
                                         <td key={g}>
@@ -520,10 +525,12 @@ export default function AnnualFormPage({ username, onLogout }) {
                                                 value={aaeGrid[t][g] ?? ""}
                                                 onChange={(e) => {
                                                     const next = e.target.value;
-                                                    setAaeGrid((prev) => ({
-                                                        ...prev,
-                                                        [t]: { ...prev[t], [g]: next },
-                                                    }));
+                                                    if (next === "" || /^\d+$/.test(next)) {
+                                                        setAaeGrid((prev) => ({
+                                                            ...prev,
+                                                            [t]: {...prev[t], [g]: next},
+                                                        }));
+                                                    }
                                                 }}
                                                 placeholder="(blank = none)"
                                                 style={{
@@ -542,9 +549,8 @@ export default function AnnualFormPage({ username, onLogout }) {
                 <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
                     <button
                         type="button"
+                        className="btn btn-success"
                         onClick={saveAAESection}
-                        disabled={!schoolId || !schoolYearId}
-                        title="For MVP, Submit just saves."
                     >
                         Submit Section
                     </button>
@@ -564,7 +570,9 @@ export default function AnnualFormPage({ username, onLogout }) {
                         value={form[name] ?? ""}
                         onChange={(e) => {
                             const next = e.target.value;
-                            setForm((prev) => ({ ...prev, [name]: next }));
+                            if (next === "" || /^\d+$/.test(next)) {
+                                setForm((prev) => ({ ...prev, [name]: next }));
+                            }
                         }}
                         style={{ width: "240px", border: "1px solid #ccc" }}
                     />
@@ -585,7 +593,10 @@ export default function AnnualFormPage({ username, onLogout }) {
                 </div>
 
                 <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
-                    <button type="button" onClick={onSave} disabled={!schoolId || !schoolYearId}>
+                    <button type="button"
+                            className="btn btn-success"
+                            onClick={onSave}
+                            >
                         Submit Section
                     </button>
                 </div>
@@ -597,24 +608,30 @@ export default function AnnualFormPage({ username, onLogout }) {
         <>
             <AppHeader username={username} onLogout={onLogout} />
 
-            <div style={{ padding: "1rem" }}>
+            <div className="container my-4">
                 <AnnualContextHeader />
                 <AnnualSelectors />
                 <SectionTabs />
 
-                {notify && <p>{notify}</p>}
+                {notify && (
+                    <div className="alert alert-info py-2">
+                        {notify}
+                    </div>
+                )}
 
-                <div style={{ border: "1px solid #ddd", padding: "1rem", borderRadius: "6px" }}>
-                    {section === "AAE" && <AAESection />}
+                <div className="card">
+                    <div className="card-body">
 
-                    {section === "ATTR" && (
-                        <AttritionForm
-                            title="Enrollment: Attrition"
-                            form={attrForm}
-                            setForm={setAttrForm}
-                            onSave={() => saveAttritionSection({ soc: false })}
-                        />
-                    )}
+                        {section === "AAE" && <AAESection />}
+
+                        {section === "ATTR" && (
+                            <AttritionForm
+                                title="Enrollment: Attrition"
+                                form={attrForm}
+                                setForm={setAttrForm}
+                                onSave={() => saveAttritionSection({ soc: false })}
+                            />
+                        )}
 
                     {section === "ATTR_SOC" && (
                         <AttritionForm
@@ -628,6 +645,8 @@ export default function AnnualFormPage({ username, onLogout }) {
                 <AnnualEnrollmentRateGraphSelector/>
                 <DashboardGraphSelectors/>
             </div>
+            </div>
+
         </>
     );
 }
