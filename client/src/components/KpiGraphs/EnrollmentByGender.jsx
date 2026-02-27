@@ -48,7 +48,6 @@ export default function EnrollmentByGenderChart({
 
             console.log(res);
 
-            // Same logic check
             if (ctx && res && Array.isArray(res)) {
                 const existing = Chart.getChart(canvasId);
                 if (existing) {
