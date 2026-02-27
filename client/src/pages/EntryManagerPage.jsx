@@ -15,6 +15,8 @@ export default function EntryManagerPage({ username, onLogout }) {
     const [entries, setEntries] = useState([]);
     const [editingId, setEditingId] = useState(null);
     const [notify, setNotify] = useState("");
+    const role = localStorage.getItem("role");
+    const isAdmin = role === "admin";
 
     const [date, setDate] = useState("");
     const [valueA, setValueA] = useState("");
