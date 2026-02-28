@@ -15,7 +15,7 @@ import {
     getSchools,
     getSchoolYears,
     chooseDisplaySchool,
-    chooseDisplayYear,
+    chooseDisplayYear, chooseDisplaySchoolInquiriesYOY,
 } from "../api/annualBenchmarkingApi.js";
 import Chart from 'https://cdn.jsdelivr.net/npm/chart.js/auto/+esm';
 
@@ -280,6 +280,7 @@ export default function AnnualFormPage({ username, onLogout }) {
             try {
                 const payload = { displaySchoolId: displaySchoolId };
                 const res = await chooseDisplaySchool(payload);
+                console.log(res);
                 if (res) {
                     const existingChart = Chart.getChart("enrollmentRate");
                     if (existingChart) existingChart.destroy();
@@ -299,6 +300,68 @@ export default function AnnualFormPage({ username, onLogout }) {
             }
         }
         updateEnrollmentOverTime();
+    }, [displaySchoolId, displaySchoolYear]);
+
+    useEffect(() => {
+        async function updateInquiriesYOY() {
+            console.log("Inside updateInquiriesYOY");
+            if (!displaySchoolId) return;
+            try {
+                const payload = { displaySchoolId: displaySchoolId };
+                const res = await chooseDisplaySchoolInquiriesYOY(payload);
+                //console.log(res);
+                if (res) {
+                    // If there's an existing chart, destroy it so it can be replaced
+                    const existingChart = Chart.getChart("inquiriesYOY");
+                    if (existingChart) existingChart.destroy();
+
+                    // Make the new chart
+                    new Chart(document.getElementById('inquiriesYOY'), {
+                        type: 'line',
+                        data: {
+                            labels: res.map(row => row.SCHOOL_YR_ID),
+                            datasets: [{
+                                label: 'Change in Total Inquiries',
+                                data: res.map(row => row.percentage)
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        // When you hover over a point on the graph, add the % sign
+                                        label: function(context) {
+                                            let label = context.dataset.label || "";
+                                            if (label) {
+                                                label += ": ";
+                                            }
+                                            // context.parsed.y is row.percentage, which is a decimal value passed from backend
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y.toFixed(2) + '%';
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    // Add % to vertical axis
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + "%";
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Line chart failed:", err);
+            }
+        }
+        updateInquiriesYOY();
     }, [displaySchoolId, displaySchoolYear]);
 
     useEffect(() => {
@@ -469,6 +532,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     </label>
                 </div>
                 <div><canvas id="enrollmentRate"></canvas></div>
+                <div><canvas id="inquiriesYOY"></canvas></div>
             </div>
         );
     }
