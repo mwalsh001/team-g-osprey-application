@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import AppHeader from "../components/AppHeader.jsx";
 import {
     addAAE,
@@ -33,6 +33,11 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     const [displaySchoolId, setDisplaySchoolId] = useState("");
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
+    const [retentionRate, setRetentionRate] = useState("");
+
+    const enrollmentRate = useRef(null);
+    const inquiriesYOY = useRef(null);
+    const enrollmentByGender = useRef(null);
 
     const [section, setSection] = useState("AAE");
 
@@ -283,9 +288,9 @@ export default function AnnualFormPage({ username, onLogout }) {
                 const payload = { displaySchoolId: displaySchoolId };
                 const res = await chooseDisplaySchool(payload);
                 if (res) {
-                    const existingChart = Chart.getChart("enrollmentRate");
+                    const existingChart = Chart.getChart(enrollmentRate.current);
                     if (existingChart) existingChart.destroy();
-                    new Chart(document.getElementById('enrollmentRate'), {
+                    new Chart(enrollmentRate.current, {
                         type: 'bar',
                         data: {
                             labels: res.map(row => row.SCHOOL_YR_ID),
@@ -301,7 +306,7 @@ export default function AnnualFormPage({ username, onLogout }) {
             }
         }
         updateEnrollmentOverTime();
-    }, [displaySchoolId, displaySchoolYear]);
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
 
     useEffect(() => {
         async function updateInquiriesYOY() {
@@ -311,11 +316,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                 const res = await chooseDisplaySchoolInquiriesYOY(payload);
                 if (res) {
                     // If there's an existing chart, destroy it so it can be replaced
-                    const existingChart = Chart.getChart("inquiriesYOY");
+                    const existingChart = Chart.getChart(inquiriesYOY.current);
                     if (existingChart) existingChart.destroy();
 
                     // Make the new chart
-                    new Chart(document.getElementById('inquiriesYOY'), {
+                    new Chart(inquiriesYOY.current, {
                         type: 'line',
                         data: {
                             labels: res.map(row => row.SCHOOL_YR_ID),
@@ -361,7 +366,7 @@ export default function AnnualFormPage({ username, onLogout }) {
             }
         }
         updateInquiriesYOY();
-    }, [displaySchoolId, displaySchoolYear]);
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
 
     useEffect(() => {
         async function updateEnrollmentByGender() {
@@ -373,11 +378,11 @@ export default function AnnualFormPage({ username, onLogout }) {
             };
 
             const res = await chooseDisplayYear(payload);
-            const ctx = document.getElementById('enrollmentByGender');
+            const ctx = enrollmentByGender.current;
 
             // Logic check: verify res.body is actually an array
             if (ctx && res && Array.isArray(res)) {
-                const existing = Chart.getChart("enrollmentByGender");
+                const existing = Chart.getChart(enrollmentByGender.current);
                 if (existing) {
                     existing.destroy();
                 }
@@ -400,6 +405,28 @@ export default function AnnualFormPage({ username, onLogout }) {
             }
         }
         updateEnrollmentByGender();
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
+
+    useEffect(() => {
+        async function updateRetention(){
+            if (!displaySchoolId || !displaySchoolYear) return;
+
+            document.getElementById('retentionSpecificYr');
+
+            const payload = {
+                displaySchoolId: Number(displaySchoolId),
+                displaySchoolYear: Number(displaySchoolYear)
+            };
+
+            const res = await getRetention(payload);
+            console.log(res);
+
+            if(res){
+                setRetentionRate(res.retentionRate);
+            }
+
+        }
+        updateRetention();
     }, [displaySchoolId, displaySchoolYear]);
 
     // -------------------- UI --------------------
@@ -529,8 +556,9 @@ export default function AnnualFormPage({ username, onLogout }) {
                         </select>
                     </label>
                 </div>
-                <div><canvas id="enrollmentRate"></canvas></div>
-                <div><canvas id="inquiriesYOY"></canvas></div>
+                <div><canvas ref={enrollmentRate}></canvas></div>
+                <div><canvas ref={inquiriesYOY}></canvas></div>
+                {/*<div id="retentionSpecificYr"></div>*/}
             </div>
         );
     }
@@ -551,9 +579,18 @@ export default function AnnualFormPage({ username, onLogout }) {
                         </select>
                     </label>
                 </div>
-                <div><canvas id="enrollmentByGender"></canvas></div>
+                <div><canvas ref={enrollmentByGender}></canvas></div>
             </div>
         );
+    }
+
+    function Retention(){
+        return(
+            <div>
+                <p>Retention Rate</p>
+                {retentionRate !== null ? `${retentionRate}%` : "--"}
+            </div>
+        )
     }
 
     function AAESection() {
@@ -703,10 +740,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                             onSave={() => saveAttritionSection({ soc: true })}
                         />
                     )}
+                    </div>
+                    <AnnualEnrollmentRateGraphSelector/>
+                    <DashboardGraphSelectors/>
+                    <Retention/>
                 </div>
-                <AnnualEnrollmentRateGraphSelector/>
-                <DashboardGraphSelectors/>
-            </div>
             </div>
 
         </>
