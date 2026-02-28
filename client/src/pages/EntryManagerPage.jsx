@@ -16,6 +16,7 @@ import {
     getSchoolYears,
     chooseDisplaySchool,
     chooseDisplayYear,
+    getRetention,
 } from "../api/annualBenchmarkingApi.js";
 import Chart from 'https://cdn.jsdelivr.net/npm/chart.js/auto/+esm';
 
@@ -31,6 +32,8 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     const [displaySchoolId, setDisplaySchoolId] = useState("");
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
+
+    const [retentionRate, setRetentionRate] = useState("");
 
     const [section, setSection] = useState("AAE");
 
@@ -341,6 +344,26 @@ export default function AnnualFormPage({ username, onLogout }) {
         updateEnrollmentByGender();
     }, [displaySchoolId, displaySchoolYear]);
 
+    // BUG CURRENTLY: RETENTION RATE FOR YEAR APPEARS, BUT CHARTS DO NOT
+    // useEffect(() => {
+    //     async function updateRetention(){
+    //         if (!displaySchoolId || !displaySchoolYear) return;
+    //
+    //         const payload = {
+    //             displaySchoolId: Number(displaySchoolId),
+    //             displaySchoolYear: Number(displaySchoolYear)
+    //         };
+    //
+    //         const res = await getRetention(payload);
+    //
+    //         if(res){
+    //             setRetentionRate(res.retentionRate);
+    //         }
+    //
+    //     }
+    //     updateRetention();
+    // }, [displaySchoolId, displaySchoolYear]);
+
     // -------------------- UI --------------------
     function AnnualContextHeader() {
         return (
@@ -494,6 +517,15 @@ export default function AnnualFormPage({ username, onLogout }) {
         );
     }
 
+    function Retention(){
+        return(
+            <div>
+                <p>Retention Rate</p>
+                    {retentionRate !== null ? `${retentionRate}%` : "--"}
+            </div>
+        )
+    }
+
     function AAESection() {
         return (
             <div>
@@ -644,6 +676,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                 </div>
                 <AnnualEnrollmentRateGraphSelector/>
                 <DashboardGraphSelectors/>
+                <Retention/>
             </div>
             </div>
 

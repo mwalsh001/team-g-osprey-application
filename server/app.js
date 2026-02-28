@@ -475,8 +475,46 @@ async function run() {
         res.json(arr);
     })
 
+    app.post("/api/retention", requireAuth, async(req, res) =>{
+        const schoolId = req.body.displaySchoolId;
+        const schoolYear = req.body.displaySchoolYear;
 
+        const enrollment = await aaeCol.find({
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: schoolYear,
+            GENDER: "U"
+        }).toArray();
 
+        const totalEnrolled = enrollment.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        const activity = await eaCol.find({
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: schoolYear
+        }).toArray();
+
+        const totalAdded = activity.reduce((accumulator, obj) => {
+            return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
+        },0);
+
+        const totalLeft = activity.reduce((accumulator, obj) => {
+            return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
+        },0);
+
+        const startingPop = totalEnrolled + totalAdded;
+        const endingPop = startingPop - totalLeft;
+
+        let retentionRate =0;
+
+        if (startingPop >0){
+            retentionRate = (endingPop / startingPop) * 100;
+        }
+
+        res.json({
+            retentionRate: Number(retentionRate.toFixed(2))
+        });
+    })
     
 
 }

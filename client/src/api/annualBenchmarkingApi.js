@@ -54,6 +54,8 @@ export const deleteAttritionSoc = (payload) => apiPost("/api/attritionSoc/delete
 export const chooseDisplaySchool = (payload) => apiPost("/api/chooseDisplaySchool", payload, "Choose display school failed");
 export const chooseDisplayYear = (payload) => apiPost("/api/chooseDisplayYear", payload, "Choose display year failed");
 
+export const getRetention= (payload) => apiPost("/api/retention", payload, "Get retention failed");
+
 function authHeaders() {
     const token = localStorage.getItem("token");
     return token ? { Authorization: `Bearer ${token}` } : {};
