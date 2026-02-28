@@ -304,6 +304,66 @@ export default function AnnualFormPage({ username, onLogout }) {
     }, [displaySchoolId, displaySchoolYear]);
 
     useEffect(() => {
+        async function updateInquiriesYOY() {
+            if (!displaySchoolId) return;
+            try {
+                const payload = { displaySchoolId: displaySchoolId };
+                const res = await chooseDisplaySchoolInquiriesYOY(payload);
+                if (res) {
+                    // If there's an existing chart, destroy it so it can be replaced
+                    const existingChart = Chart.getChart("inquiriesYOY");
+                    if (existingChart) existingChart.destroy();
+
+                    // Make the new chart
+                    new Chart(document.getElementById('inquiriesYOY'), {
+                        type: 'line',
+                        data: {
+                            labels: res.map(row => row.SCHOOL_YR_ID),
+                            datasets: [{
+                                label: 'Change in Total Inquiries',
+                                data: res.map(row => row.percentage)
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        // When you hover over a point on the graph, add the % sign
+                                        label: function(context) {
+                                            let label = context.dataset.label || "";
+                                            if (label) {
+                                                label += ": ";
+                                            }
+                                            // context.parsed.y is row.percentage, which is a decimal value passed from backend
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y.toFixed(2) + '%';
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    // Add % to vertical axis
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + "%";
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Line chart failed:", err);
+            }
+        }
+        updateInquiriesYOY();
+    }, [displaySchoolId, displaySchoolYear]);
+
+    useEffect(() => {
         async function updateEnrollmentByGender() {
             if (!displaySchoolId || !displaySchoolYear) return;
 
@@ -315,7 +375,6 @@ export default function AnnualFormPage({ username, onLogout }) {
             const res = await chooseDisplayYear(payload);
             const ctx = document.getElementById('enrollmentByGender');
 
-            console.log(res);
             // Logic check: verify res.body is actually an array
             if (ctx && res && Array.isArray(res)) {
                 const existing = Chart.getChart("enrollmentByGender");
@@ -471,6 +530,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     </label>
                 </div>
                 <div><canvas id="enrollmentRate"></canvas></div>
+                <div><canvas id="inquiriesYOY"></canvas></div>
             </div>
         );
     }
