@@ -14,6 +14,7 @@ function App() {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("password");
+        localStorage.removeItem("schoolName");
         setUsername(null);
     }
 //if no username, render loginpage again

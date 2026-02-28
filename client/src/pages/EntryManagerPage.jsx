@@ -23,6 +23,7 @@ export default function EntryManagerPage({ username, onLogout }) {
     const [valueB, setValueB] = useState("");
     const [schoolUsername, setSchoolUsername] = useState("");
     const [schoolPassword, setSchoolPassword] = useState("");
+    const [schoolName, setSchoolName] = useState("");
 
     useEffect(() => {
         async function load() {
@@ -101,10 +102,11 @@ export default function EntryManagerPage({ username, onLogout }) {
     const handleCreateSchoolUser = async (entry) => {
         entry.preventDefault();
         try {
-            await createSchoolAccount(schoolUsername, schoolPassword);
-            setNotify(`School account "${schoolUsername}" created successfully`);
+            await createSchoolAccount(schoolUsername, schoolPassword, schoolName);
+            setNotify(`School account "${schoolUsername}" from "${schoolName}" created successfully`);
             setSchoolUsername("");
             setSchoolPassword("");
+            setSchoolName("");
         } catch (e) {
             setNotify("Failed to create the school account");
         }
@@ -120,6 +122,8 @@ export default function EntryManagerPage({ username, onLogout }) {
                     <input value={schoolUsername} onChange={(entry) => setSchoolUsername(entry.target.value)}/>
                     <input type="password" value={schoolPassword}
                            onChange={(entry) => setSchoolPassword(entry.target.value)}/>
+                    <label> School Name: </label>
+                    <input value={schoolName} onChange={(entry) => setSchoolName(entry.target.value)}/>
                     <button type="submit"> Create School User</button>
                 </form>
             )}

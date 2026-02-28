@@ -24,13 +24,13 @@ function requireAuth(req, res, next) {
     }
 }
 
-//Create School user
+//Create School user (by admin only)
 app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
-    const {username, password} = req.body;
-    if (!username || !password) {
+    const {username, password, schoolName} = req.body;
+    if (!username || !password || !schoolName) {
         return res.status(400).json({
             success: false,
-            message: "username and password are required"
+            message: "username and password and school are required"
         });
     }
     const existingUser = await usersCollection.findOne({username});
@@ -41,7 +41,7 @@ app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res)
         });
     }
     await usersCollection.insertOne({
-        username, password, role: "school"
+        username, password, role: "school", schoolName: String(schoolName)
     });
     return res.json({
         success: true, message: `School account created`
@@ -78,18 +78,15 @@ async function run() {
                 message: "valid username, password and role are required"
             });
         }
-        let user = await usersCollection.findOne({username});
+        const user = await usersCollection.findOne({username});
         const payload = {
             username, role
         }
+
         if (!user) {
-            await usersCollection.insertOne({username, password, role});
-            const token = jwt.sign(
-                payload,
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN }
-            );
-            return res.json({ success: true, newUser: true, token });
+            return res.json({
+                success: false, message: "Account not found, create one with admin account"
+            });
         }
 
         if (user.password !== password) {
@@ -100,10 +97,15 @@ async function run() {
                 success: false, message: `This account is not registered as a ${role}`
             });
         }
+        if (role === "school" && !user.schoolName) {
+            return res.json({
+                success: false, message: "The school account is missing an associated school name "
+            });
+        }
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
-        return res.json({ success: true, newUser: false, token });
+        return res.json({success: true, newUser: false, token, schoolName: user.schoolName || null});
     });
 
     app.get("/api/entries", requireAuth, async (req, res) => {

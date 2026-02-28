@@ -52,11 +52,11 @@ function authHeaders() {
     return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export async function createSchoolAccount(username, password) {
+export async function createSchoolAccount(username, password, schoolName) {
     const response = await fetch("/api/admin/create-school", {
         method: 'POST',
         headers: {"Content-Type": "application/json", ...authHeaders()},
-        body: JSON.stringify({username, password}),
+        body: JSON.stringify({username, password, schoolName}),
     });
     if (!response.ok) throw new Error("Create school account failed");
     return response.json();

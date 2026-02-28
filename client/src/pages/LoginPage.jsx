@@ -15,13 +15,10 @@ export default function LoginPage({ onLogin }) {
             setError("Incorrect username, password, or role.");
             return;
         }
-        if (response.newUser) {
-            alert(`No account existing for "${username}" as ${role}. A new one was created.`);
-        }
-
         localStorage.setItem("token", response.token);
         localStorage.setItem("username", username);
-        localStorage.setItem("role", response.role || role);
+        localStorage.setItem("role", response.role || role)
+        localStorage.setItem("schoolName", response.schoolName || "");
         onLogin(username);
     }
 
