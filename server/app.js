@@ -753,56 +753,50 @@ async function run() {
 
         const SCHOOL_ID = req.body.displaySchoolId;
         const ENROLLMENT_TYPE_CD = "INQUIRIES";
-        const GENDER = "U";
 
-        // Fetch the records and the year mappings (map the ID to the actual year
+        // Fetch all inquiry records (any gender) and the year mappings
         const [rows, yearMapping] = await Promise.all([
-            aaeCol.find({ SCHOOL_ID, ENROLLMENT_TYPE_CD, GENDER })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
+            aaeCol.find({ SCHOOL_ID, ENROLLMENT_TYPE_CD })
                 .sort({ SCHOOL_YR_ID: 1 })
                 .toArray(),
-            schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
+            schoolYearCol.find({}).sort({ ID: 1 }).toArray()
         ]);
-        // console.log("yearMapping[1].ID: " + yearMapping[1].ID);
-        // console.log("yearMapping[1].SCHOOL_YEAR: " + yearMapping[1].SCHOOL_YEAR);
 
-        // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
-        // This creates an array where index is ID and value is the actual year
         const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-        //console.log("yearLookup[1]: "+ yearLookup[1]);
-        //console.log("yearLookup[1].SCHOOL_YEAR: "+ yearLookup[1].SCHOOL_YEAR);``
 
-        // Calculate percentages for corresponding year
-        const report = rows
-            // Filter out any objects where NR_ENROLLED is null or undefined
-            .filter(row => row.NR_ENROLLED !== null && row.NR_ENROLLED !== undefined)
+        // Sum inquiries across genders per school year
+        const totalsByYear = new Map();
+        for (const row of rows) {
+            if (row.NR_ENROLLED === null || row.NR_ENROLLED === undefined) continue;
+            const current = totalsByYear.get(row.SCHOOL_YR_ID) ?? 0;
+            totalsByYear.set(row.SCHOOL_YR_ID, current + row.NR_ENROLLED);
+        }
+
+        const totals = Array.from(totalsByYear.entries())
+            .sort((a, b) => a[0] - b[0])
+            .map(([SCHOOL_YR_ID, NR_ENROLLED]) => ({ SCHOOL_YR_ID, NR_ENROLLED }));
+
+        const report = totals
             .map((current, index, validRows) => {
-                // If it's the first valid year, can't calculate % change yet
                 if (index === 0) return null;
 
                 const previous = validRows[index - 1];
                 const v1 = previous.NR_ENROLLED;
                 const v2 = current.NR_ENROLLED;
 
-                // Calculate the percentage: ((year2 - year1) / year1) * 100
                 const percentChange = v1 !== 0
                     ? ((v2 - v1) / v1) * 100
                     : 0;
-                //console.log("percentChange: "+percentChange);
 
-                // Swap the Foreign Key for the actual year
-                //console.log("current.SCHOOL_YR_ID: "+current.SCHOOL_YR_ID);
                 const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-                //console.log("actualYear: "+actualYear);
 
                 return {
                     SCHOOL_YR_ID: actualYear,
-                    //NR_Enrolled: v2,
                     percentage: percentChange
-                    //percentage: `${percentChange.toFixed(2)}%`
                 };
             })
-            .filter(Boolean); // Remove the 'null' from the first year
-        //console.log(report);
+            .filter(Boolean);
+
         res.json(report);
     })
 

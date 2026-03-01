@@ -7,7 +7,7 @@ import EnrollmentOverTimeChart from "../components/KpiGraphs/EnrollmentOverTime.
 import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.jsx";
 import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
 import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
-// import InquiriesYOYChart from "../components/KpiGraphs/Inquiries.jsx";
+import InquiriesYOYChart from "../components/KpiGraphs/Inquiries.jsx";
 
 export default function KpiDashboard({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -51,7 +51,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                 <EnrollmentByGenderChart schools={schools} years={years} canvasId="enrollmentByGender" />
                                 <RetentionYOYChart schools={schools} years={years} canvasId="retentionYOY" />
                                 <AttritionYOYChart schools={schools} years={years} canvasId="attritionYOY" />
-                                {/*<InquiriesYOYChart schools={schools} years={years} canvasId="inquiriesYOY" />*/}
+                                <InquiriesYOYChart schools={schools} years={years} canvasId="inquiriesYOY" />
                             </div>
                         </div>
                     </div>
