@@ -1,11 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-    getEntries,
-    addEntry,
-    editEntry,
-    deleteEntry,
-    createSchoolAccount
-} from "../api/entryApi";
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
 
@@ -71,14 +64,8 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     const [notify, setNotify] = useState("");
     const role = localStorage.getItem("role");
-    const isAdmin = role === "admin";
+    const schoolName = localStorage.getItem("schoolName");
 
-    const [date, setDate] = useState("");
-    const [valueA, setValueA] = useState("");
-    const [valueB, setValueB] = useState("");
-    const [schoolUsername, setSchoolUsername] = useState("");
-    const [schoolPassword, setSchoolPassword] = useState("");
-    const [schoolName, setSchoolName] = useState("");
     const selectedSchool = useMemo(
         () => schools.find((s) => String(s.id) === String(schoolId)),
         [schools, schoolId]
@@ -290,7 +277,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     ) : (
                         <span>Select a school</span>
                     )}
-                    {" • "}
+                    {" | "}
                     {selectedYear ? (
                         <>
                             <strong>Year:</strong> {selectedYear.year ?? selectedYear.id} (ID: {selectedYear.id})
@@ -298,7 +285,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     ) : (
                         <span>Select a year</span>
                     )}
-                    {" • "}
+                    {" | "}
                     {selectedGrade ? (
                         <>
                             <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id} (ID: {selectedGrade.id})
@@ -311,21 +298,6 @@ export default function AnnualFormPage({ username, onLogout }) {
         );
     }
 
-        setEditingId(entry.id);
-        setNotify("");
-    };
-    const handleCreateSchoolUser = async (entry) => {
-        entry.preventDefault();
-        try {
-            await createSchoolAccount(schoolUsername, schoolPassword, schoolName);
-            setNotify(`School account "${schoolUsername}" from "${schoolName}" created successfully`);
-            setSchoolUsername("");
-            setSchoolPassword("");
-            setSchoolName("");
-        } catch (e) {
-            setNotify("Failed to create the school account");
-        }
-    };
     function SectionTabs() {
         return (
             <div className="btn-group mb-4 flex-wrap">
@@ -516,19 +488,7 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout}/>
-            {isAdmin && (
-                <form onSubmit={handleCreateSchoolUser}>
-                    <h3>Create New School User Account</h3>
-                    <input value={schoolUsername} onChange={(entry) => setSchoolUsername(entry.target.value)}/>
-                    <input type="password" value={schoolPassword}
-                           onChange={(entry) => setSchoolPassword(entry.target.value)}/>
-                    <label> School Name: </label>
-                    <input value={schoolName} onChange={(entry) => setSchoolName(entry.target.value)}/>
-                    <button type="submit"> Create School User</button>
-                </form>
-            )}
-
+            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName} />
             <div className="container-fluid p-0">
                 <div className="d-flex" style={{minHeight: "100vh"}}>
                     <div style={{flex: "0 0 auto"}}>

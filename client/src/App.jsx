@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage.jsx";
 import EntryManagerPage from "./pages/EntryManagerPage.jsx";
 import KpiDashboard from "./pages/KpiDashboard.jsx";
+import EditUsersPage from "./pages/EditUsersPage.jsx";
 
 export default function App() {
     const [username, setUsername] = useState(() => localStorage.getItem("username"));
@@ -36,6 +37,11 @@ export default function App() {
             <Route
                 path="/dashboard"
                 element={<KpiDashboard username={username} onLogout={handleLogout} />}
+            />
+
+            <Route
+                path="/editUser"
+                element={<EditUsersPage username={username} onLogout={handleLogout} />}
             />
 
             <Route path="*" element={<Navigate to="/" replace />} />

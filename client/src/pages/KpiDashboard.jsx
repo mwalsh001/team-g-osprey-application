@@ -10,6 +10,8 @@ export default function KpiDashboard({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
+    const role = localStorage.getItem("role");
+    const schoolName = localStorage.getItem("schoolName");
 
     useEffect(() => {
         async function load() {
@@ -29,7 +31,7 @@ export default function KpiDashboard({ username, onLogout }) {
 
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout} />
+            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName} />
 
             <div className="container-fluid">
                 <div className="row">

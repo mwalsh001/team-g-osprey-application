@@ -2,6 +2,8 @@ import { NavLink } from "react-router-dom";
 
 export default function Sidebar({ collapsed, onToggle }) {
     const width = collapsed ? "72px" : "200px";
+    const userRole = localStorage.getItem("role");
+    const isAdmin = userRole === "admin";
 
     return (
         <aside
@@ -57,6 +59,19 @@ export default function Sidebar({ collapsed, onToggle }) {
                         {!collapsed && <span>KPI Dashboard</span>}
                     </NavLink>
                 </li>
+
+                {isAdmin && (<li className="nav-item">
+                    <NavLink
+                        to="/editUser"
+                        className={({isActive}) =>
+                            `nav-link d-flex align-items-center gap-2 ${isActive ? "active" : "link-dark"}`
+                        }
+                        title="Edit Users"
+                    >
+                        <span aria-hidden="true">+</span>
+                        {!collapsed && <span>Edit Users</span>}
+                    </NavLink>
+                </li>)}
             </ul>
         </aside>
     );
