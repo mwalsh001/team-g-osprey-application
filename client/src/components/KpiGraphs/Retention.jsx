@@ -4,29 +4,26 @@ import { retentionYOY, getRetention } from "../../api/annualBenchmarkingApi.js";
 
 
 export default function RetentionYOYChart ({
-                                               schools = [],
                                                years = [],
                                                canvasId = "retentionYOY",
                                                initialSchoolId = "",
+                                               selectedSchoolId = "",
+                                               selectedYearId = "",
                                            }) {
 
-    const [displaySchoolId, setDisplaySchoolId] = useState(initialSchoolId || "");
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [retentionRate, setRetentionRate] = useState(null);
 
+    const displaySchoolId = selectedSchoolId || initialSchoolId || "";
+
 
     useEffect(() => {
-        if (!displaySchoolId && schools?.length) {
-            setDisplaySchoolId(String(schools[0].id));
+        if (selectedYearId) {
+            setDisplaySchoolYear(String(selectedYearId));
+            return;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [schools]);
-
-    useEffect(() => {
-        if (!displaySchoolYear && years?.length) {
-            setDisplaySchoolYear(String(years[0].id));
-        }
-    }, [years]);
+        if (!displaySchoolYear && years?.length) setDisplaySchoolYear(String(years[0].id));
+    }, [selectedYearId, years, displaySchoolYear]);
 
     useEffect(() => {
         async function updateRetention() {
@@ -97,28 +94,6 @@ export default function RetentionYOYChart ({
 
     return (
         <div>
-            <label>
-                School
-                <br/>
-                <select value={displaySchoolId} onChange={(e) => setDisplaySchoolId(Number(e.target.value))}>
-                    {schools.map((s) => (
-                        <option key={s.id} value={String(s.id)}>
-                            {s.name} (ID: {s.id})
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label>
-                School Year
-                <br/>
-                <select value={displaySchoolYear} onChange={(e) => setDisplaySchoolYear(Number(e.target.value))}>
-                    {years.map((y) => (
-                        <option key={y.id} value={String(y.id)}>
-                            {y.year ?? y.id} (ID: {y.id})
-                        </option>
-                    ))}
-                </select>
-            </label>
             <div>
                 <p>Retention Rate</p>
                 {retentionRate !== null ? `${retentionRate}%` : "--"}

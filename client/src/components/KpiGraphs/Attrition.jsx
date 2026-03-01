@@ -3,29 +3,26 @@ import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
 import { attritionYOY, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
 
 export default function AttritionYOYChart({
-                                              schools = [],
                                               years = [],
                                               canvasId = "attritionYOY",
                                               initialSchoolId = "",
+                                              selectedSchoolId = "",
+                                              selectedYearId = "",
                                           }) {
 
-    const [displaySchoolId, setDisplaySchoolId] = useState(initialSchoolId || "");
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [attritionRate, setAttritionRate] = useState(null);
     const [mostCommonReason, setMostCommonReason] = useState(null);
 
-    useEffect(() => {
-        if (!displaySchoolId && schools?.length) {
-            setDisplaySchoolId(String(schools[0].id));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [schools]);
+    const displaySchoolId = selectedSchoolId || initialSchoolId || "";
 
     useEffect(() => {
-        if (!displaySchoolYear && years?.length) {
-            setDisplaySchoolYear(Number(years[0].id));
+        if (selectedYearId) {
+            setDisplaySchoolYear(String(selectedYearId));
+            return;
         }
-    }, [years]);
+        if (!displaySchoolYear && years?.length) setDisplaySchoolYear(String(years[0].id));
+    }, [selectedYearId, years, displaySchoolYear]);
 
     useEffect(() => {
         async function updateAttrition() {
@@ -99,28 +96,6 @@ export default function AttritionYOYChart({
 
     return (
         <div>
-            <label>
-                School
-                <br/>
-                <select value={displaySchoolId} onChange={(e) => setDisplaySchoolId(Number(e.target.value))}>
-                    {schools.map((s) => (
-                        <option key={s.id} value={String(s.id)}>
-                            {s.name} (ID: {s.id})
-                        </option>
-                    ))}
-                </select>
-            </label>
-            <label>
-                School Year
-                <br/>
-                <select value={displaySchoolYear} onChange={(e) => setDisplaySchoolYear(Number(e.target.value))}>
-                    {years.map((y) => (
-                        <option key={y.id} value={String(y.id)}>
-                            {y.year ?? y.id} (ID: {y.id})
-                        </option>
-                    ))}
-                </select>
-            </label>
             <div>
                 <p>Attrition Rate</p>
                 {attritionRate !== null ? `${attritionRate}%` : "--"}

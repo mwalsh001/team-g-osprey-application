@@ -1,15 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
 import { chooseDisplaySchoolInquiriesYOY } from "../../api/annualBenchmarkingApi.js";
 
-export default function InquiriesYOYChart({ schools = [], canvasId = "inquiriesYOY" }) {
-    const [displaySchoolId, setDisplaySchoolId] = useState("");
-
-    useEffect(() => {
-        if (!displaySchoolId && schools?.length) {
-            setDisplaySchoolId(String(schools[0].id));
-        }
-    }, [schools]);
+export default function InquiriesYOYChart({
+    canvasId = "inquiriesYOY",
+    initialSchoolId = "",
+    selectedSchoolId = "",
+}) {
+    const displaySchoolId = selectedSchoolId || initialSchoolId || "";
 
     useEffect(() => {
         async function updateInquiriesYOY() {
@@ -64,17 +62,6 @@ export default function InquiriesYOYChart({ schools = [], canvasId = "inquiriesY
 
     return (
         <div>
-            <label>
-                School
-                <br />
-                <select value={displaySchoolId} onChange={(e) => setDisplaySchoolId(Number(e.target.value))}>
-                    {schools.map((s) => (
-                        <option key={s.id} value={String(s.id)}>
-                            {s.name} (ID: {s.id})
-                        </option>
-                    ))}
-                </select>
-            </label>
             <canvas id={canvasId}></canvas>
         </div>
     );

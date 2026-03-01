@@ -13,6 +13,8 @@ export default function KpiDashboard({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
+    const [selectedSchoolId, setSelectedSchoolId] = useState("");
+    const [selectedYearId, setSelectedYearId] = useState("");
     const role = localStorage.getItem("role");
     const schoolName = localStorage.getItem("schoolName");
 
@@ -22,6 +24,8 @@ export default function KpiDashboard({ username, onLogout }) {
                 const [s, y] = await Promise.all([getSchools(), getSchoolYears()]);
                 setSchools(s);
                 setYears(y);
+                if (s?.length && !selectedSchoolId) setSelectedSchoolId(String(s[0].id));
+                if (y?.length && !selectedYearId) setSelectedYearId(String(y[0].id));
             } catch (e) {
                 alert("Unauthorized");
                 localStorage.removeItem("token");
@@ -46,12 +50,44 @@ export default function KpiDashboard({ username, onLogout }) {
                         <div className="container my-4">
                             <h2 className="mb-4">KPI Dashboard</h2>
 
+                            <div className="row g-3 mb-4">
+                                <div className="col-md-4">
+                                    <label className="form-label">School</label>
+                                    <select
+                                        className="form-select"
+                                        value={selectedSchoolId}
+                                        onChange={(e) => setSelectedSchoolId(e.target.value)}
+                                    >
+                                        {schools.map((s) => (
+                                            <option key={s.id} value={String(s.id)}>
+                                                {s.name} (ID: {s.id})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="col-md-4">
+                                    <label className="form-label">School Year</label>
+                                    <select
+                                        className="form-select"
+                                        value={selectedYearId}
+                                        onChange={(e) => setSelectedYearId(e.target.value)}
+                                    >
+                                        {years.map((y) => (
+                                            <option key={y.id} value={String(y.id)}>
+                                                {y.year ?? y.id} (ID: {y.id})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
                             <div className="row g-4">
-                                <EnrollmentOverTimeChart schools={schools} canvasId="enrollmentRate" />
-                                <EnrollmentByGenderChart schools={schools} years={years} canvasId="enrollmentByGender" />
-                                <RetentionYOYChart schools={schools} years={years} canvasId="retentionYOY" />
-                                <AttritionYOYChart schools={schools} years={years} canvasId="attritionYOY" />
-                                <InquiriesYOYChart schools={schools} years={years} canvasId="inquiriesYOY" />
+                                <EnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} canvasId="enrollmentRate"/>
+                                <EnrollmentByGenderChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="enrollmentByGender"/>
+                                <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
+                                <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>
+                                <InquiriesYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesYOY"/>
                             </div>
                         </div>
                     </div>

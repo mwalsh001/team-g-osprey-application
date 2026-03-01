@@ -1,26 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
 import { chooseDisplaySchool } from "../../api/annualBenchmarkingApi.js";
 
 export default function EnrollmentOverTimeChart({
-                                                    schools = [],
                                                     canvasId = "enrollmentRate",
                                                     initialSchoolId = "",
+                                                    selectedSchoolId = "",
                                                 }) {
-    const [displaySchoolId, setDisplaySchoolId] = useState(
-        initialSchoolId || ""
-    );
-
-    useEffect(() => {
-        if (!displaySchoolId && schools?.length) {
-            setDisplaySchoolId(Number(schools[0].id));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [schools]);
-
-    async function sendDisplaySchool(e) {
-        setDisplaySchoolId(Number(e.target.value));
-    }
+    const displaySchoolId = selectedSchoolId || initialSchoolId || "";
 
     useEffect(() => {
         async function updateEnrollmentOverTime() {
@@ -57,28 +44,6 @@ export default function EnrollmentOverTimeChart({
 
     return (
         <div>
-            <div
-                style={{
-                    display: "flex",
-                    gap: "1rem",
-                    flexWrap: "wrap",
-                    alignItems: "end",
-                    marginBottom: "1rem",
-                }}
-            >
-                <label>
-                    School
-                    <br />
-                    <select value={displaySchoolId} onChange={(e) => sendDisplaySchool(e)}>
-                        {schools.map((s) => (
-                            <option key={s.id} value={String(s.id)}>
-                                {s.name} (ID: {s.id})
-                            </option>
-                        ))}
-                    </select>
-                </label>
-            </div>
-
             <div>
                 <canvas id={canvasId}></canvas>
             </div>

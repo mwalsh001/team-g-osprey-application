@@ -1,38 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
 import { chooseDisplayYear } from "../../api/annualBenchmarkingApi.js";
 
 export default function EnrollmentByGenderChart({
-                                                    schools = [],
-                                                    years = [],
                                                     canvasId = "enrollmentByGender",
                                                     initialSchoolId = "",
                                                     initialYearId = "",
+                                                    selectedSchoolId = "",
+                                                    selectedYearId = "",
                                                 }) {
-    const [displaySchoolId, setDisplaySchoolId] = useState(initialSchoolId || "");
-    const [displaySchoolYear, setDisplaySchoolYear] = useState(initialYearId || "");
-
-    useEffect(() => {
-        if (!displaySchoolId && schools?.length) {
-            setDisplaySchoolId(String(schools[0].id));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [schools]);
-
-    useEffect(() => {
-        if (!displaySchoolYear && years?.length) {
-            setDisplaySchoolYear(String(years[0].id));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [years]);
-
-    async function sendDisplaySchool(e) {
-        setDisplaySchoolId(Number(e.target.value));
-    }
-
-    async function sendDisplayYear(e) {
-        setDisplaySchoolYear(Number(e.target.value));
-    }
+    const displaySchoolId = selectedSchoolId || initialSchoolId || "";
+    const displaySchoolYear = selectedYearId || initialYearId || "";
 
     useEffect(() => {
         async function updateEnrollmentByGender() {
@@ -74,40 +52,6 @@ export default function EnrollmentByGenderChart({
 
     return (
         <div>
-            <div
-                style={{
-                    display: "flex",
-                    gap: "1rem",
-                    flexWrap: "wrap",
-                    alignItems: "end",
-                    marginBottom: "1rem",
-                }}
-            >
-                <label>
-                    School
-                    <br />
-                    <select value={displaySchoolId} onChange={(e) => sendDisplaySchool(e)}>
-                        {schools.map((s) => (
-                            <option key={s.id} value={String(s.id)}>
-                                {s.name} (ID: {s.id})
-                            </option>
-                        ))}
-                    </select>
-                </label>
-
-                <label>
-                    School Year
-                    <br />
-                    <select value={displaySchoolYear} onChange={(e) => sendDisplayYear(e)}>
-                        {years.map((y) => (
-                            <option key={y.id} value={String(y.id)}>
-                                {y.year ?? y.id} (ID: {y.id})
-                            </option>
-                        ))}
-                    </select>
-                </label>
-            </div>
-
             <div>
                 <canvas id={canvasId}></canvas>
             </div>
