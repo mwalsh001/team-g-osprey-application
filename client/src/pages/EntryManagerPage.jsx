@@ -18,6 +18,9 @@ import {
     chooseDisplayYear,
     chooseDisplaySchoolInquiriesYOY,
     getRetention,
+    retentionYOY,
+    getAttritionRate,
+    attritionYOY
 } from "../api/annualBenchmarkingApi.js";
 import Chart from 'https://cdn.jsdelivr.net/npm/chart.js/auto/+esm';
 
@@ -34,9 +37,13 @@ export default function AnnualFormPage({ username, onLogout }) {
     const [displaySchoolId, setDisplaySchoolId] = useState("");
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [retentionRate, setRetentionRate] = useState("");
+    const [attritionRate, setAttritionRate] = useState("");
+    const [mostCommonReason, setMostCommonReason] = useState("");
 
     const enrollmentRate = useRef(null);
     const inquiriesYOY = useRef(null);
+    const retentionYOYChart = useRef(null);
+    const attritionYOYChart = useRef(null);
     const enrollmentByGender = useRef(null);
 
     const [section, setSection] = useState("AAE");
@@ -369,6 +376,123 @@ export default function AnnualFormPage({ username, onLogout }) {
     }, [displaySchoolId, displaySchoolYear, retentionRate]);
 
     useEffect(() => {
+        async function updateRetentionYOY() {
+            if (!displaySchoolId) return;
+            try {
+                const payload = { displaySchoolId: displaySchoolId };
+                const res = await retentionYOY(payload);
+                if (res) {
+                    // If there's an existing chart, destroy it so it can be replaced
+                    const existingChart = Chart.getChart(retentionYOYChart.current);
+                    if (existingChart) existingChart.destroy();
+
+                    // Make the new chart
+                    new Chart(retentionYOYChart.current, {
+                        type: 'line',
+                        data: {
+                            labels: res.map(row => row.SCHOOL_YR_ID),
+                            datasets: [{
+                                label: 'Change in Retention Rate',
+                                data: res.map(row => row.percentage)
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        // When you hover over a point on the graph, add the % sign
+                                        label: function(context) {
+                                            let label = context.dataset.label || "";
+                                            if (label) {
+                                                label += ": ";
+                                            }
+                                            // context.parsed.y is row.percentage, which is a decimal value passed from backend
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y.toFixed(2) + '%';
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    // Add % to vertical axis
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + "%";
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Line chart failed:", err);
+            }
+        }
+        updateRetentionYOY();
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
+
+    useEffect(() => {
+        async function updateAttritionYOY() {
+            if (!displaySchoolId) return;
+            try {
+                const payload = { displaySchoolId: displaySchoolId };
+                const res = await attritionYOY(payload);
+                if (res) {
+                    // If there's an existing chart, destroy it so it can be replaced
+                    const existingChart = Chart.getChart(attritionYOYChart.current);
+                    if (existingChart) existingChart.destroy();
+
+                    // Make the new chart
+                    new Chart(attritionYOYChart.current, {
+                        type: 'line',
+                        data: {
+                            labels: res.map(row => row.SCHOOL_YR_ID),
+                            datasets: [{
+                                label: 'Change in Attrition Rate',
+                                data: res.map(row => row.percentage)
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || "";
+                                            if (label) {
+                                                label += ": ";
+                                            }
+                                            if (context.parsed.y !== null) {
+                                                label += context.parsed.y.toFixed(2) + '%';
+                                            }
+                                            return label;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value + "%";
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Line chart failed:", err);
+            }
+        }
+        updateAttritionYOY();
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
+
+    useEffect(() => {
         async function updateEnrollmentByGender() {
             if (!displaySchoolId || !displaySchoolYear) return;
 
@@ -428,6 +552,30 @@ export default function AnnualFormPage({ username, onLogout }) {
         }
         updateRetention();
     }, [displaySchoolId, displaySchoolYear]);
+
+    useEffect(() => {
+        async function updateAttrition(){
+            if (!displaySchoolId || !displaySchoolYear) return;
+
+            document.getElementById('attritionSpecificYr');
+
+            const payload = {
+                displaySchoolId: Number(displaySchoolId),
+                displaySchoolYear: Number(displaySchoolYear)
+            };
+
+            const res = await getAttritionRate(payload);
+            console.log(res);
+
+            if(res){
+                setAttritionRate(res.attritionRate);
+                setMostCommonReason(res.mostCommon);
+            }
+
+        }
+        updateAttrition();
+    }, [displaySchoolId, displaySchoolYear]);
+
 
     // -------------------- UI --------------------
     function AnnualContextHeader() {
@@ -558,6 +706,8 @@ export default function AnnualFormPage({ username, onLogout }) {
                 </div>
                 <div><canvas ref={enrollmentRate}></canvas></div>
                 <div><canvas ref={inquiriesYOY}></canvas></div>
+                <div><canvas ref={retentionYOYChart}></canvas></div>
+                <div><canvas ref={attritionYOYChart}></canvas></div>
                 {/*<div id="retentionSpecificYr"></div>*/}
             </div>
         );
@@ -589,6 +739,17 @@ export default function AnnualFormPage({ username, onLogout }) {
             <div>
                 <p>Retention Rate</p>
                 {retentionRate !== null ? `${retentionRate}%` : "--"}
+            </div>
+        )
+    }
+
+    function Attrition(){
+        return(
+            <div>
+                <p>Attrition Rate</p>
+                {attritionRate !== null ? `${attritionRate}%` : "--"}
+                <p>Most Common Reason</p>
+                {mostCommonReason ??  "--"}
             </div>
         )
     }
@@ -744,6 +905,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     <AnnualEnrollmentRateGraphSelector/>
                     <DashboardGraphSelectors/>
                     <Retention/>
+                    <Attrition/>
                 </div>
             </div>
 
