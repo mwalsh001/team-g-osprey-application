@@ -6,20 +6,20 @@ import KpiDashboard from "./pages/KpiDashboard.jsx";
 
 export default function App() {
     const [username, setUsername] = useState(() => localStorage.getItem("username"));
-
+//read username
     function handleLogin(username) {
-        // IMPORTANT: Login flow should also set localStorage.setItem("token", token)
         localStorage.setItem("username", username);
         setUsername(username);
     }
-
+//^^stores username/updates it
     function handleLogout() {
         localStorage.removeItem("token");
         localStorage.removeItem("username");
         localStorage.removeItem("password");
+        localStorage.removeItem("schoolName");
         setUsername(null);
     }
-
+//if no username, render loginpage again
     const token = localStorage.getItem("token");
 
     if (!username || !token) {

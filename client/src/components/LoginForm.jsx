@@ -1,14 +1,17 @@
 export default function LoginForm({
-                                      title,
+                                      title = "Login",
                                       username,
                                       password,
                                       error,
                                       onUsernameChange,
                                       onPasswordChange,
                                       onSubmit,
-                                      primaryLabel,
-                                      secondaryLabel
+                                      onSchoolLogin,
+                                      onAdminLogin,
+                                      primaryLabel = "School Login",
+                                      secondaryLabel = "Admin Login",
                                   }) {
+
     return (
         <div className="container d-flex justify-content-center align-items-center min-vh-100">
             <div className="card shadow-sm" style={{ width: "100%", maxWidth: "400px" }}>
@@ -21,17 +24,17 @@ export default function LoginForm({
                         </div>
                     )}
 
-                    <form onSubmit={onSubmit}>
-                        <div className="mb-3">
-                            <label className="form-label">Username</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={username}
-                                onChange={(e) => onUsernameChange(e.target.value)}
-                                required
-                            />
-                        </div>
+            <form onSubmit={onSubmit}>
+                <div className="mb-3">
+                    <label className="form-label">Username</label>
+                    <input
+                        type="text"
+                        className="form-control"
+                        value={username}
+                        onChange={(e) => onUsernameChange(e.target.value)}
+                        required
+                    />
+                </div>
 
                         <div className="mb-4">
                             <label className="form-label">Password</label>
@@ -44,21 +47,11 @@ export default function LoginForm({
                             />
                         </div>
 
-                        <div className="d-grid gap-2">
-                            <button type="submit" className="btn btn-primary">
-                                {primaryLabel}
-                            </button>
-
-                            <button
-                                type="submit"
-                                className="btn btn-outline-secondary"
-                            >
-                                {secondaryLabel}
-                            </button>
-                        </div>
-                    </form>
+                <div className="d-grid gap-2">
+                    <button type="button" className="btn btn-primary" onClick={onSchoolLogin}>{primaryLabel}</button>
+                    <button type="button" className="btn btn-outline-secondary" onClick={onAdminLogin}>{secondaryLabel}</button>
                 </div>
-            </div>
+            </form>
         </div>
     );
 }
