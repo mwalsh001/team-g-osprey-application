@@ -5,6 +5,8 @@ import { getSchools, getSchoolYears } from "../api/annualBenchmarkingApi.js";
 
 import EnrollmentOverTimeChart from "../components/KpiGraphs/EnrollmentOverTime.jsx";
 import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.jsx";
+import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
+import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
 
 export default function KpiDashboard({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -46,6 +48,8 @@ export default function KpiDashboard({ username, onLogout }) {
                             <div className="row g-4">
                                 <EnrollmentOverTimeChart schools={schools} canvasId="enrollmentRate" />
                                 <EnrollmentByGenderChart schools={schools} years={years} canvasId="enrollmentByGender" />
+                                <RetentionYOYChart schools={schools} years={years} canvasId="retentionYOY" />
+                                <AttritionYOYChart schools={schools} years={years} canvasId="attritionYOY" />
                             </div>
                         </div>
                     </div>

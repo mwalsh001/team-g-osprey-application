@@ -38,7 +38,6 @@ export const getAttrition = ({ schoolId, schoolYearId, gradeId }) => {
 
 export const addAttrition = (payload) => apiPost("/api/attrition", payload, "Add attrition failed");
 export const editAttrition = (payload) => apiPost("/api/attrition/edit", payload, "Edit attrition failed");
-export const deleteAttrition = (payload) => apiPost("/api/attrition/delete", payload, "Delete attrition failed");
 
 // Attrition SOC
 export const getAttritionSoc = ({ schoolId, schoolYearId, gradeId }) => {
@@ -49,10 +48,16 @@ export const getAttritionSoc = ({ schoolId, schoolYearId, gradeId }) => {
 
 export const addAttritionSoc = (payload) => apiPost("/api/attritionSoc", payload, "Add attrition SOC failed");
 export const editAttritionSoc = (payload) => apiPost("/api/attritionSoc/edit", payload, "Edit attrition SOC failed");
-export const deleteAttritionSoc = (payload) => apiPost("/api/attritionSoc/delete", payload, "Delete attrition SOC failed");
 
 export const chooseDisplaySchool = (payload) => apiPost("/api/chooseDisplaySchool", payload, "Choose display school failed");
 export const chooseDisplayYear = (payload) => apiPost("/api/chooseDisplayYear", payload, "Choose display year failed");
+
+export const chooseDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/chooseDisplaySchoolInquiriesYOY", payload, "Choose display year failed");
+export const retentionYOY = (payload) => apiPost("/api/retentionYOY", payload, "Retention YOY failed");
+export const attritionYOY = (payload) => apiPost("/api/attritionYOY", payload, "Attrition YOY failed");
+
+export const getRetention = (payload) => apiPost("/api/retention", payload, "Get retention failed");
+export const getAttritionRate = (payload) => apiPost("/api/attrition", payload, "Get attrition failed");
 
 function authHeaders() {
     const token = localStorage.getItem("token");

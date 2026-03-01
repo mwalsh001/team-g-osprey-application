@@ -521,9 +521,237 @@ async function run() {
         res.json(arr);
     })
 
+    app.post("/api/retentionYOY", requireAuth, async(req, res) =>{
+        const SCHOOL_ID = req.body.displaySchoolId;
+
+        const yearMapping = await schoolYearCol
+            .find({})
+            .sort({ ID: 1 })
+            .toArray();
+
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+
+        const rows = [];
 
 
-    
+        for (const year of yearMapping){
+            const SCHOOL_YR_ID = year.ID;
+
+            const enrollment = await aaeCol.find({
+                SCHOOL_ID,
+                SCHOOL_YR_ID,
+                GENDER: "U"
+            }).toArray();
+
+            const totalEnrolled = enrollment.reduce((acc, obj) =>
+                acc + obj.NR_ENROLLED, 0);
+
+            if (totalEnrolled <= 0) continue;
+
+            const activity = await eaCol.find({
+                SCHOOL_ID,
+                SCHOOL_YR_ID
+            }).toArray();
+
+            const totalAdded = activity.reduce((acc, obj) =>
+                acc + obj.STUDENTS_ADDED_DURING_YEAR, 0);
+
+            const totalLeft = activity.reduce((acc, obj) =>
+                acc + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN, 0);
+
+            const startingPop = totalEnrolled + totalAdded;
+            const endingPop = startingPop - totalLeft;
+
+            if (startingPop <= 0) continue;
+
+            let retentionRate =0;
+
+            if (startingPop > 0) {
+                retentionRate = (endingPop / startingPop) * 100;
+            }
+
+            rows.push({
+                SCHOOL_YR_ID,
+                retentionRate
+            });
+        }
+
+        const report = rows
+            .filter(row => row.retentionRate !== null && row.retentionRate !== undefined)
+            .map((current, index, validRows) => {
+                // If it's the first valid year, can't calculate % change yet
+                if (index === 0) return null;
+
+
+                const previous = validRows[index - 1];
+                const v1 = previous.retentionRate;
+                const v2 = current.retentionRate;
+
+                if (v1 <= 0 || v2 <= 0)
+                    return null;
+
+                // Calculate the percentage: ((year2 - year1) / year1) * 100
+                const percentChange = v1 !== 0
+                    ? ((v2 - v1) / v1) * 100
+                    : 0;
+
+                // Swap the Foreign Key for the actual year
+                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+
+                return {
+                    SCHOOL_YR_ID: actualYear,
+                    //NR_Enrolled: v2,
+                    percentage: percentChange
+                    //percentage: `${percentChange.toFixed(2)}%`
+                };
+            })
+            .filter(Boolean); // Remove the 'null' from the first year
+        res.json(report);
+
+    })
+
+    app.post("/api/attritionYOY", requireAuth, async(req, res) =>{
+        const SCHOOL_ID = req.body.displaySchoolId;
+
+        const yearMapping = await schoolYearCol
+            .find({})
+            .sort({ ID: 1 })
+            .toArray();
+
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+
+        const rows = [];
+
+
+        for (const year of yearMapping){
+            const SCHOOL_YR_ID = year.ID;
+
+            const enrollment = await aaeCol.find({
+                SCHOOL_ID,
+                SCHOOL_YR_ID,
+                GENDER: "U"
+            }).toArray();
+
+            const totalEnrolled = enrollment.reduce((acc, obj) =>
+                acc + obj.NR_ENROLLED, 0);
+
+            if (totalEnrolled <= 0) continue;
+
+            const activity = await eaCol.find({
+                SCHOOL_ID,
+                SCHOOL_YR_ID
+            }).toArray();
+
+            const totalAdded = activity.reduce((acc, obj) =>
+                acc + obj.STUDENTS_ADDED_DURING_YEAR, 0);
+
+            const totalLeft = activity.reduce((acc, obj) =>
+                acc + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN, 0);
+
+            const startingPop = totalEnrolled + totalAdded;
+
+            if (startingPop <= 0) continue;
+
+            let attritionRate =0;
+
+            if (startingPop > 0) {
+                attritionRate = (totalLeft / startingPop) * 100;
+            }
+
+            rows.push({
+                SCHOOL_YR_ID,
+                attritionRate
+            });
+        }
+
+        const report = rows
+            .filter(row => row.attritionRate !== null && row.attritionRate !== undefined)
+            .map((current, index, validRows) => {
+                // If it's the first valid year, can't calculate % change yet
+                if (index === 0) return null;
+
+
+                const previous = validRows[index - 1];
+                const v1 = previous.attritionRate;
+                const v2 = current.attritionRate;
+
+                if (v1 <= 0 || v2 <= 0)
+                    return null;
+
+                // Calculate the percentage: ((year2 - year1) / year1) * 100
+                const percentChange = v1 !== 0
+                    ? ((v2 - v1) / v1) * 100
+                    : 0;
+
+                // Swap the Foreign Key for the actual year
+                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+
+                return {
+                    SCHOOL_YR_ID: actualYear,
+                    percentage: percentChange
+                    //percentage: `${percentChange.toFixed(2)}%`
+                };
+            })
+            .filter(Boolean); // Remove the 'null' from the first year
+        res.json(report);
+
+    })
+
+    //CURRENT BUG: attrition percent undefined and most common reason not found
+    app.post("/api/attrition", requireAuth, async(req, res) =>{
+        const schoolId = req.body.displaySchoolId;
+        const schoolYear = req.body.displaySchoolYear;
+
+        const enrollment = await aaeCol.find({
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: schoolYear,
+            GENDER: "U"
+        }).toArray();
+
+        const totalEnrolled = enrollment.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        const activity = await eaCol.find({
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: schoolYear
+        }).toArray();
+
+        const totalAdded = activity.reduce((accumulator, obj) => {
+            return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
+        },0);
+
+        const totalLeft = activity.reduce((accumulator, obj) => {
+            return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
+        },0);
+
+        const startingPop = totalEnrolled + totalAdded;
+
+        let attritionRate =0;
+
+        if (startingPop >0){
+            attritionRate = (totalLeft / startingPop) * 100;
+        }
+
+        const reasons = [
+            { reason: "Dismissed or Withdrawn", value: activity.reduce((acc, obj) => acc + (obj.STUD_DISS_WTHD || 0), 0) },
+            { reason: "Not Invited Back", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_INV || 0), 0) },
+            { reason: "Did Not Return", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0) },
+        ];
+
+        const mostCommon = reasons.reduce((max, curr) => (curr.value > max.value ? curr : max));
+
+        res.json({
+            attritionRate: Number(attritionRate.toFixed(2)),
+            mostCommon : mostCommon.reason
+        });
+
+
+    })
+
+
+
+
 
 }
 
