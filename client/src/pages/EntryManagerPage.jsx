@@ -44,6 +44,7 @@ export default function AnnualFormPage({ username, onLogout }) {
     const inquiriesYOY = useRef(null);
     const retentionYOYChart = useRef(null);
     const attritionYOYChart = useRef(null);
+    const combinedYOYChart = useRef(null);
     const enrollmentByGender = useRef(null);
 
     const [section, setSection] = useState("AAE");
@@ -493,6 +494,72 @@ export default function AnnualFormPage({ username, onLogout }) {
     }, [displaySchoolId, displaySchoolYear, retentionRate]);
 
     useEffect(() => {
+        async function updateCombinedYOY() {
+            if (!displaySchoolId) return;
+            try {
+                const payload = { displaySchoolId: displaySchoolId };
+                const [retentionRes, attritionRes] = await Promise.all([
+                    retentionYOY(payload),
+                    attritionYOY(payload)
+                ]);
+
+                if (!retentionRes || !attritionRes) return;
+
+                // If there's an existing chart, destroy it so it can be replaced
+                const existingChart = Chart.getChart(combinedYOYChart.current);
+                if (existingChart) existingChart.destroy();
+
+                // Make the new chart
+                new Chart(combinedYOYChart.current, {
+                    type: 'line',
+                    data: {
+                        labels: retentionRes.map(row => row.SCHOOL_YR_ID),
+                        datasets: [{
+                            label: 'Change in Retention Rate',
+                            data: retentionRes.map(row => row.percentage)
+                        },{
+                            label: "Change in Attrition Rate",
+                            data: attritionRes.map(row => row.percentage)
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || "";
+                                        if (label) {
+                                            label += ": ";
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y.toFixed(2) + '%';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + "%";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Line chart failed:", err);
+            }
+        }
+        updateCombinedYOY();
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
+
+
+
+    useEffect(() => {
         async function updateEnrollmentByGender() {
             if (!displaySchoolId || !displaySchoolYear) return;
 
@@ -708,6 +775,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                 <div><canvas ref={inquiriesYOY}></canvas></div>
                 <div><canvas ref={retentionYOYChart}></canvas></div>
                 <div><canvas ref={attritionYOYChart}></canvas></div>
+                <div><canvas ref={combinedYOYChart}></canvas></div>
                 {/*<div id="retentionSpecificYr"></div>*/}
             </div>
         );
