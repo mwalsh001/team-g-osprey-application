@@ -58,7 +58,7 @@ export const retentionYOY = (payload) => apiPost("/api/retentionYOY", payload, "
 export const attritionYOY = (payload) => apiPost("/api/attritionYOY", payload, "Attrition YOY failed");
 
 export const getRetention = (payload) => apiPost("/api/retention", payload, "Get retention failed");
-export const getAttritionRate = (payload) => apiPost("/api/attrition", payload, "Get attrition failed");
+export const getAttritionRate = (payload) => apiPost("/api/attritionYear", payload, "Get attrition failed");
 
 function authHeaders() {
     const token = localStorage.getItem("token");

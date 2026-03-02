@@ -759,7 +759,7 @@ async function run() {
     })
 
     //CURRENT BUG: attrition percent undefined and most common reason not found
-    app.post("/api/attrition", requireAuth, async(req, res) =>{
+    app.post("/api/attritionYear", requireAuth, async(req, res) =>{
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
 
