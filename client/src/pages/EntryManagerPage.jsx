@@ -46,6 +46,7 @@ export default function AnnualFormPage({ username, onLogout }) {
     const attritionYOYChart = useRef(null);
     const combinedYOYChart = useRef(null);
     const enrollmentByGender = useRef(null);
+    const inquiriesByGender = useRef(null);
 
     const [section, setSection] = useState("AAE");
 
@@ -565,7 +566,8 @@ export default function AnnualFormPage({ username, onLogout }) {
 
             const payload = {
                 displaySchoolId: Number(displaySchoolId),
-                displaySchoolYear: Number(displaySchoolYear)
+                displaySchoolYear: Number(displaySchoolYear),
+                includeFacultyChild: Boolean(true)
             };
 
             const res = await chooseDisplayYear(payload);
@@ -596,6 +598,46 @@ export default function AnnualFormPage({ username, onLogout }) {
             }
         }
         updateEnrollmentByGender();
+    }, [displaySchoolId, displaySchoolYear, retentionRate]);
+
+    useEffect(() => {
+        async function updateInquiriesByGender() {
+            if (!displaySchoolId || !displaySchoolYear) return;
+
+            const payload = {
+                displaySchoolId: Number(displaySchoolId),
+                displaySchoolYear: Number(displaySchoolYear),
+                includeFacultyChild: false
+            };
+
+            const res = await chooseDisplayYear(payload);
+            const ctx = inquiriesByGender.current;
+
+            // Logic check: verify res.body is actually an array
+            if (ctx && res && Array.isArray(res)) {
+                const existing = Chart.getChart(inquiriesByGender.current);
+                if (existing) {
+                    existing.destroy();
+                }
+
+                new Chart(
+                    ctx,
+                    {
+                        type: 'pie',
+                        data: {
+                            labels: ['Male', 'Female', 'Non-Binary'],
+                            datasets: [
+                                {
+                                    label: 'School Inquiries by Gender',
+                                    data: res
+                                }
+                            ]
+                        }
+                    }
+                );
+            }
+        }
+        updateInquiriesByGender();
     }, [displaySchoolId, displaySchoolYear, retentionRate]);
 
     useEffect(() => {
@@ -798,6 +840,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     </label>
                 </div>
                 <div><canvas ref={enrollmentByGender}></canvas></div>
+                <div><canvas ref={inquiriesByGender}></canvas></div>
             </div>
         );
     }

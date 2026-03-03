@@ -410,8 +410,7 @@ async function run() {
         // console.log(req.body);
         const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
         const GENDER = "U";
-
-        const filter = { SCHOOL_ID, GENDER };
+        let filter = { SCHOOL_ID, GENDER };
 
         // Fetch the records and the year mappings (map the ID to the actual year
         let [rows, yearMapping] = await Promise.all([
@@ -676,11 +675,17 @@ async function run() {
     app.post("/api/chooseDisplayYear", requireAuth, async(req, res) =>{
         const SCHOOL_ID = req.body.displaySchoolId;
         const SCHOOL_YR_ID = req.body.displaySchoolYear;
+        let GENDER = "M";
+        let filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+
+        //do we want to include enrolled faculty children?
+        if(!req.body.includeFacultyChild){
+            //if not, filter for INQUIRIES too
+            filter.ENROLLMENT_TYPE_CD = "INQUIRIES"
+        }
 
         // In database, there could be a value for INQUIRIES and FACULTYCHILD
         // aaeCol.find could return up to 2 objects
-        let GENDER = "M";
-        let filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
         let gender_m = await aaeCol.find(filter, {
             projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
             .toArray();
@@ -691,8 +696,7 @@ async function run() {
             }, 0);
 
         // Repeat process for females and non-binary students
-        GENDER = "F";
-        filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+        filter.GENDER = "F"
         let gender_f = await aaeCol.find(filter, {
             projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
             .toArray();
@@ -701,8 +705,7 @@ async function run() {
             return accumulator + obj.NR_ENROLLED;
         }, 0);
 
-        GENDER = "NB";
-        filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+        filter.GENDER = "NB"
         let gender_nb = await aaeCol.find(filter, {
             projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
             .toArray();
