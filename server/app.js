@@ -24,40 +24,6 @@ function requireAuth(req, res, next) {
     }
 }
 
-//Create School user (by admin only)
-app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
-    const {username, password, schoolName} = req.body;
-    if (!username || !password || !schoolName) {
-        return res.status(400).json({
-            success: false,
-            message: "username and password and school are required"
-        });
-    }
-    const existingUser = await usersCollection.findOne({username});
-    if (existingUser) {
-        return res.status(409).json({
-            success: false,
-            message: "Account with this username already exists"
-        });
-    }
-    await usersCollection.insertOne({
-        username, password, role: "school", schoolName: String(schoolName)
-    });
-    return res.json({
-        success: true, message: `School account created`
-    });
-});
-
-function requireAdmin(req, res, next) {
-    if (!req.user || req.user.role !== "admin") {
-        return res.status(403).json({
-            success: false,
-            message: "Admin access required."
-        });
-    }
-    next();
-}
-
 const url = process.env.MONGODB_URI;
 const dbconnect = new MongoClient(url);
 let usersCollection = null;
@@ -81,42 +47,30 @@ async function run() {
 
     // Login
     app.post("/api/login", async (req, res) => {
-        const {username, password, role} = req.body;
+        const {username, password} = req.body;
 
-        if (!username || !password || !["school", "admin"].includes(role)){
-            return res.json({
-                success: false,
-                message: "valid username, password and role are required"
-            });
-        }
-        const user = await usersCollection.findOne({username});
+        let user = await usersCollection.findOne({username});
         const payload = {
-            username, role
+            username
         }
-
         if (!user) {
-            return res.json({
-                success: false, message: "Account not found, create one with admin account"
-            });
+            await usersCollection.insertOne({username, password});
+            const token = jwt.sign(
+                payload,
+                process.env.JWT_SECRET,
+                { expiresIn: process.env.JWT_EXPIRES_IN }
+            );
+            return res.json({ success: true, newUser: true, token });
         }
 
         if (user.password !== password) {
             return res.json({ success: false, message: "Wrong password" });
         }
-        if (user.role !== role) {
-            return res.json({
-                success: false, message: `This account is not registered as a ${role}`
-            });
-        }
-        if (role === "school" && !user.schoolName) {
-            return res.json({
-                success: false, message: "The school account is missing an associated school name "
-            });
-        }
+
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
-        return res.json({success: true, newUser: false, token, schoolName: user.schoolName || null});
+        return res.json({ success: true, newUser: false, token });
     });
 
     app.get("/api/schools", requireAuth, async (req, res) => {
@@ -456,69 +410,90 @@ async function run() {
         // console.log(req.body);
         const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
         const GENDER = "U";
+        let filter = { SCHOOL_ID, GENDER };
 
-        const filter = { SCHOOL_ID, GENDER };
+        // Fetch the records and the year mappings (map the ID to the actual year
+        let [rows, yearMapping] = await Promise.all([
+            aaeCol.find(filter, {
+                projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1 } })  // only get these attributes of the object
+                .sort({ SCHOOL_YR_ID: 1 })  // sort the list to be in order of year
+                .toArray(),
+            schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
+        ]);
 
-        let rows = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1 } })  // only get these attributes of the object
-            .sort({ SCHOOL_YR_ID: 1 })  // sort the list to be in order of year
-            .toArray();
+        // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
+        // This creates an array where index is ID and value is the actual year
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+        //console.log("yearLookup[1]: "+ yearLookup[1]);
+
+        rows = rows.filter(e => e.NR_ENROLLED !== null)
+            .map((current) => {
+                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+
+                return {
+                    SCHOOL_YR_ID: actualYear,
+                    NR_ENROLLED: current.NR_ENROLLED
+                };
+            })
         //console.log(rows);
-        // rows.map(r => ({
-        //     mongoId: r._id.toString(),
-        //     ...r
-        // }))
-        rows = rows.filter(e => e.NR_ENROLLED !== null);  // filter the null values for NR_ENROLLED
-
-        //console.log(rows);
-        res.json(rows.map(obj => ({
-            SCHOOL_YR_ID: obj.SCHOOL_YR_ID,
-            NR_ENROLLED: obj.NR_ENROLLED
-        })));
+        res.json(rows);
     })
 
-    app.post("/api/chooseDisplayYear", requireAuth, async(req, res) =>{
+    app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async(req, res) =>{
+
         const SCHOOL_ID = req.body.displaySchoolId;
-        const SCHOOL_YR_ID = req.body.displaySchoolYear;
+        const ENROLLMENT_TYPE_CD = "INQUIRIES";
+        const GENDER = "U";
 
-        // In database, there could be a value for INQUIRIES and FACULTYCHILD
-        // aaeCol.find could return up to 2 objects
-        let GENDER = "M";
-        let filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
-        let gender_m = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
-            .toArray();
-        //console.log(gender_m);
-        // Get a single value for how many total males are enrolled
-        const val_m = gender_m.reduce((accumulator, obj) => {
-            return accumulator + obj.NR_ENROLLED;
-            }, 0);
+        // Fetch the records and the year mappings (map the ID to the actual year
+        const [rows, yearMapping] = await Promise.all([
+            aaeCol.find({ SCHOOL_ID, ENROLLMENT_TYPE_CD, GENDER })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
+                .sort({ SCHOOL_YR_ID: 1 })
+                .toArray(),
+            schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
+        ]);
+        // console.log("yearMapping[1].ID: " + yearMapping[1].ID);
+        // console.log("yearMapping[1].SCHOOL_YEAR: " + yearMapping[1].SCHOOL_YEAR);
 
-        // Repeat process for females and non-binary students
-        GENDER = "F";
-        filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
-        let gender_f = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
-            .toArray();
-        //console.log(gender_f);
-        const val_f = gender_f.reduce((accumulator, obj) => {
-            return accumulator + obj.NR_ENROLLED;
-        }, 0);
+        // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
+        // This creates an array where index is ID and value is the actual year
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+        //console.log("yearLookup[1]: "+ yearLookup[1]);
+        //console.log("yearLookup[1].SCHOOL_YEAR: "+ yearLookup[1].SCHOOL_YEAR);``
 
-        GENDER = "NB";
-        filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
-        let gender_nb = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
-            .toArray();
-        //console.log(gender_nb);
-        const val_nb = gender_nb.reduce((accumulator, obj) => {
-            return accumulator + obj.NR_ENROLLED;
-        }, 0);
+        // Calculate percentages for corresponding year
+        const report = rows
+            // Filter out any objects where NR_ENROLLED is null or undefined
+            .filter(row => row.NR_ENROLLED !== null && row.NR_ENROLLED !== undefined)
+            .map((current, index, validRows) => {
+                // If it's the first valid year, can't calculate % change yet
+                if (index === 0) return null;
 
-        // Return an array of the NR_ENROLLED
-        let arr = [val_m, val_f, val_nb];
-        console.log(arr);
-        res.json(arr);
+                const previous = validRows[index - 1];
+                const v1 = previous.NR_ENROLLED;
+                const v2 = current.NR_ENROLLED;
+
+                // Calculate the percentage: ((year2 - year1) / year1) * 100
+                const percentChange = v1 !== 0
+                    ? ((v2 - v1) / v1) * 100
+                    : 0;
+                //console.log("percentChange: "+percentChange);
+
+                // Swap the Foreign Key for the actual year
+                //console.log("current.SCHOOL_YR_ID: "+current.SCHOOL_YR_ID);
+                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+                //console.log("actualYear: "+actualYear);
+
+                return {
+                    SCHOOL_YR_ID: actualYear,
+                    //NR_Enrolled: v2,
+                    percentage: percentChange
+                    //percentage: `${percentChange.toFixed(2)}%`
+                };
+            })
+            .filter(Boolean); // Remove the 'null' from the first year
+        //console.log(report);
+        res.json(report);
     })
 
     app.post("/api/retentionYOY", requireAuth, async(req, res) =>{
@@ -697,6 +672,95 @@ async function run() {
 
     })
 
+    app.post("/api/chooseDisplayYear", requireAuth, async(req, res) =>{
+        const SCHOOL_ID = req.body.displaySchoolId;
+        const SCHOOL_YR_ID = req.body.displaySchoolYear;
+        let GENDER = "M";
+        let filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+
+        //do we want to include enrolled faculty children?
+        if(!req.body.includeFacultyChild){
+            //if not, filter for INQUIRIES too
+            filter.ENROLLMENT_TYPE_CD = "INQUIRIES"
+        }
+
+        // In database, there could be a value for INQUIRIES and FACULTYCHILD
+        // aaeCol.find could return up to 2 objects
+        let gender_m = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            .toArray();
+        //console.log(gender_m);
+        // Get a single value for how many total males are enrolled
+        const val_m = gender_m.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        // Repeat process for females and non-binary students
+        filter.GENDER = "F"
+        let gender_f = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            .toArray();
+        //console.log(gender_f);
+        const val_f = gender_f.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        filter.GENDER = "NB"
+        let gender_nb = await aaeCol.find(filter, {
+            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            .toArray();
+        //console.log(gender_nb);
+        const val_nb = gender_nb.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        // Return an array of the NR_ENROLLED
+        let arr = [val_m, val_f, val_nb];
+        console.log(arr);
+        res.json(arr);
+    })
+
+    app.post("/api/retention", requireAuth, async(req, res) =>{
+        const schoolId = req.body.displaySchoolId;
+        const schoolYear = req.body.displaySchoolYear;
+
+        const enrollment = await aaeCol.find({
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: schoolYear,
+            GENDER: "U"
+        }).toArray();
+
+        const totalEnrolled = enrollment.reduce((accumulator, obj) => {
+            return accumulator + obj.NR_ENROLLED;
+        }, 0);
+
+        const activity = await eaCol.find({
+            SCHOOL_ID: schoolId,
+            SCHOOL_YR_ID: schoolYear
+        }).toArray();
+
+        const totalAdded = activity.reduce((accumulator, obj) => {
+            return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
+        },0);
+
+        const totalLeft = activity.reduce((accumulator, obj) => {
+            return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
+        },0);
+
+        const startingPop = totalEnrolled + totalAdded;
+        const endingPop = startingPop - totalLeft;
+
+        let retentionRate =0;
+
+        if (startingPop >0){
+            retentionRate = (endingPop / startingPop) * 100;
+        }
+
+        res.json({
+            retentionRate: Number(retentionRate.toFixed(2))
+        });
+    })
+
     //CURRENT BUG: attrition percent undefined and most common reason not found
     app.post("/api/attritionYear", requireAuth, async(req, res) =>{
         const schoolId = req.body.displaySchoolId;
@@ -748,60 +812,6 @@ async function run() {
 
 
     })
-
-    app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async(req, res) =>{
-
-        const SCHOOL_ID = req.body.displaySchoolId;
-        const ENROLLMENT_TYPE_CD = "INQUIRIES";
-
-        // Fetch all inquiry records (any gender) and the year mappings
-        const [rows, yearMapping] = await Promise.all([
-            aaeCol.find({ SCHOOL_ID, ENROLLMENT_TYPE_CD })
-                .sort({ SCHOOL_YR_ID: 1 })
-                .toArray(),
-            schoolYearCol.find({}).sort({ ID: 1 }).toArray()
-        ]);
-
-        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-
-        // Sum inquiries across genders per school year
-        const totalsByYear = new Map();
-        for (const row of rows) {
-            if (row.NR_ENROLLED === null || row.NR_ENROLLED === undefined) continue;
-            const current = totalsByYear.get(row.SCHOOL_YR_ID) ?? 0;
-            totalsByYear.set(row.SCHOOL_YR_ID, current + row.NR_ENROLLED);
-        }
-
-        const totals = Array.from(totalsByYear.entries())
-            .sort((a, b) => a[0] - b[0])
-            .map(([SCHOOL_YR_ID, NR_ENROLLED]) => ({ SCHOOL_YR_ID, NR_ENROLLED }));
-
-        const report = totals
-            .map((current, index, validRows) => {
-                if (index === 0) return null;
-
-                const previous = validRows[index - 1];
-                const v1 = previous.NR_ENROLLED;
-                const v2 = current.NR_ENROLLED;
-
-                const percentChange = v1 !== 0
-                    ? ((v2 - v1) / v1) * 100
-                    : 0;
-
-                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-
-                return {
-                    SCHOOL_YR_ID: actualYear,
-                    percentage: percentChange
-                };
-            })
-            .filter(Boolean);
-
-        res.json(report);
-    })
-
-
-
 
 
 }

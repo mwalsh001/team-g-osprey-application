@@ -8,6 +8,8 @@ import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.
 import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
 import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
 import InquiriesYOYChart from "../components/KpiGraphs/Inquiries.jsx";
+import InquiriesByGenderChart from "../components/KpiGraphs/InquiriesByGender.jsx";
+import CombinedYOYChart from "../components/KpiGraphs/CombinedYoY.jsx";
 
 export default function KpiDashboard({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -87,7 +89,9 @@ export default function KpiDashboard({ username, onLogout }) {
                                 <EnrollmentByGenderChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="enrollmentByGender"/>
                                 <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
                                 <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>
+                                <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />
                                 <InquiriesYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesYOY"/>
+                                <InquiriesByGenderChart selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesByGender"/>
                             </div>
                         </div>
                     </div>
