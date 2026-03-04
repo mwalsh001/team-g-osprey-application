@@ -19,6 +19,7 @@ async function apiPost(url, body, errorMessage) {
 // Lookups
 export const getSchools = () => apiGet("/api/schools", "Get schools failed");
 export const getSchoolYears = () => apiGet("/api/schoolYears", "Get school years failed");
+export const getSchoolRegions = () => apiGet("/api/schoolRegions", "Get school regions failed");
 export const getGrades = () => apiGet("/api/grades", "Get grades failed");
 
 // AAE
