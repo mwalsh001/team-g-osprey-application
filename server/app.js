@@ -95,8 +95,8 @@ async function run() {
                 message: `account is not registered as a ${role}`
             });
         }
-        const resolvedSchoolName = user.schoolName || user.school || null;
-        if (role === "school" && !resolvedSchoolName) {
+        const resSchoolName = user.schoolName || user.school || null;
+        if (role === "school" && !resSchoolName) {
             return res.json({
                 success: false,
                 message: "School account is missing a school name"
@@ -105,7 +105,7 @@ async function run() {
         const payload = {
             username,
             role: user.role,
-            schoolName: resolvedSchoolName
+            schoolName: resSchoolName
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -116,7 +116,7 @@ async function run() {
             newUser: false,
             token,
             role: user.role,
-            schoolName: resolvedSchoolName
+            schoolName: resSchoolName
         });
     });
     app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
