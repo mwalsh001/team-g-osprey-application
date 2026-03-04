@@ -24,6 +24,16 @@ function requireAuth(req, res, next) {
     }
 }
 
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== "admin") {
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+    }
+    next();
+}
+
 const url = process.env.MONGODB_URI;
 const dbconnect = new MongoClient(url);
 let usersCollection = null;
@@ -45,32 +55,94 @@ async function run() {
     eaCol = dbconnect.db("osprey-data").collection("ENROLL_ATTRITION");
     easocCol = dbconnect.db("osprey-data").collection("ENROLL_ATTRITION_SOC");
 
-    // Login
     app.post("/api/login", async (req, res) => {
-        const {username, password} = req.body;
-
-        let user = await usersCollection.findOne({username});
-        const payload = {
-            username
+        const {username, password, role} = req.body;
+        if (!username || !password || !["school", "admin"].includes(role)) {
+            return res.json({
+                success: false,
+                message: "Valid username, password, and role are required."
+            });
         }
+        let user = await usersCollection.findOne({username});
         if (!user) {
-            await usersCollection.insertOne({username, password});
-            const token = jwt.sign(
-                payload,
-                process.env.JWT_SECRET,
-                {expiresIn: process.env.JWT_EXPIRES_IN}
-            );
-            return res.json({success: true, newUser: true, token});
+            return res.json({
+                success: false,
+                message: "Account not found"
+            });
         }
 
         if (user.password !== password) {
             return res.json({ success: false, message: "Wrong password" });
         }
 
+        if (!user.role) {
+            if (role === "school") {
+                await usersCollection.updateOne(
+                    {username},
+                    {$set: {role: "school"}}
+                );
+                user = {...user, role: "school"};
+            } else {
+                return res.json({
+                    success: false,
+                    message: "account is not registered as an admin."
+                });
+            }
+        }
+        if (user.role !== role) {
+            return res.json({
+                success: false,
+                message: `account is not registered as a ${role}`
+            });
+        }
+        if (role === "school" && !user.school) {
+            return res.json({
+                success: false,
+                message: "School account is missing a school name"
+            });
+        }
+        const payload = {
+            username,
+            role: user.role,
+            school: user.school || null
+        };
+
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
-        return res.json({success: true, newUser: false, token});
+        return res.json({
+            success: true,
+            newUser: false,
+            token,
+            role: user.role,
+            school: user.school || null
+        });
+    });
+    app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
+        const {username, password, school} = req.body;
+        if (!username || !password || !school) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter username, password or school"
+            });
+        }
+        const existingUser = await usersCollection.findOne({username});
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: "Account with this username exists"
+            });
+        }
+        await usersCollection.insertOne({
+            username,
+            password,
+            role: "school",
+            school: String(school).trim()
+        });
+        return res.json({
+            success: true,
+            message: "School account created"
+        });
     });
 
     app.get("/api/schools", requireAuth, async (req, res) => {
