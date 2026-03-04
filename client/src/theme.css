@@ -1,0 +1,40 @@
+:root {
+    --bs-primary: #003864;
+    --bs-primary-rgb: 0, 56, 100;
+    --bs-link-color: #003864;
+    --bs-link-hover-color: #002a4a;
+}
+
+.nav-pills {
+    --bs-nav-pills-link-active-bg: #003864;
+    --bs-nav-pills-link-active-color: #ffffff;
+}
+
+.nav-pills .nav-link:not(.active):hover {
+    background-color: #e6eef5;
+    color: #003864;
+}
+
+.btn-primary {
+    --bs-btn-bg: #003864;
+    --bs-btn-border-color: #003864;
+    --bs-btn-hover-bg: #002a4a;
+    --bs-btn-hover-border-color: #002a4a;
+    --bs-btn-active-bg: #002642;
+    --bs-btn-active-border-color: #002642;
+    --bs-btn-disabled-bg: #003864;
+    --bs-btn-disabled-border-color: #003864;
+}
+
+.btn-outline-primary {
+    --bs-btn-color: #003864;
+    --bs-btn-border-color: #003864;
+    --bs-btn-hover-bg: #e6eef5;
+    --bs-btn-hover-border-color: #003864;
+    --bs-btn-hover-color: #003864;
+    --bs-btn-active-bg: #002642;
+    --bs-btn-active-border-color: #002642;
+    --bs-btn-active-color: #ffffff;
+    --bs-btn-disabled-color: #003864;
+    --bs-btn-disabled-border-color: #003864;
+}

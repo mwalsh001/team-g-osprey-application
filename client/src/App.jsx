@@ -1,14 +1,19 @@
-import {useState} from 'react'
+import {useState} from "react";
+import {Routes, Route, Navigate} from "react-router-dom";
 import LoginPage from "./pages/LoginPage.jsx";
 import EntryManagerPage from "./pages/EntryManagerPage.jsx";
+import KpiDashboard from "./pages/KpiDashboard.jsx";
+import EditUsersPage from "./pages/EditUsersPage.jsx";
 
-function App() {
+export default function App() {
     const [username, setUsername] = useState(() => localStorage.getItem("username"));
+
 //read username
     function handleLogin(username) {
         localStorage.setItem("username", username);
         setUsername(username);
     }
+
 //^^stores username/updates it
     function handleLogout() {
         localStorage.removeItem("token");
@@ -17,14 +22,32 @@ function App() {
         localStorage.removeItem("schoolName");
         setUsername(null);
     }
+
 //if no username, render loginpage again
-    if (!username) {
-        return <LoginPage onLogin={handleLogin}/>
+    const token = localStorage.getItem("token");
+
+    if (!username || !token) {
+        return <LoginPage onLogin={handleLogin}/>;
     }
 
     return (
-        <EntryManagerPage username={username} onLogout={handleLogout}/>
-    )
-}
+        <Routes>
+            <Route
+                path="/"
+                element={<EntryManagerPage username={username} onLogout={handleLogout}/>}
+            />
 
-export default App
+            <Route
+                path="/dashboard"
+                element={<KpiDashboard username={username} onLogout={handleLogout}/>}
+            />
+
+            <Route
+                path="/editUser"
+                element={<EditUsersPage username={username} onLogout={handleLogout}/>}
+            />
+
+            <Route path="*" element={<Navigate to="/" replace/>}/>
+        </Routes>
+    );
+}
