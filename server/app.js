@@ -24,23 +24,8 @@ function requireAuth(req, res, next) {
     }
 }
 
-async function requireAdmin(req, res, next) {
-    if (!req.user || !req.user.username) {
-        return res.status(403).json({
-            success: false,
-            message: "Admin access required."
-        });
-    }
-
-    if (req.user.role === "admin") {
-        return next();
-    }
-
-    const user = await usersCollection.findOne(
-        {username: req.user.username},
-        {projection: {role: 1}}
-    );
-    if (user?.role !== "admin") {
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== "admin") {
         return res.status(403).json({
             success: false,
             message: "Admin access required."
