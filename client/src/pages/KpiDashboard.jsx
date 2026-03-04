@@ -105,7 +105,7 @@ export default function KpiDashboard({ username, onLogout }) {
                             </div>
                             <div className="row g-4">
                                 <EnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} canvasId="enrollmentRate"/>
-                                {/*<FilterEnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} regions={regions} canvasId={"filterEnrollmentRate"}/>*/}
+                                <FilterEnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} selectedRegion={selectedRegion} canvasId={"filterEnrollmentRate"}/>
                                 <EnrollmentByGenderChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="enrollmentByGender"/>
                                 <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
                                 <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>

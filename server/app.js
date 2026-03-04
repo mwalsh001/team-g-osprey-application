@@ -418,15 +418,25 @@ async function run() {
         res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
-    async function getSchoolEnrollmentData(body) {
-        const SCHOOL_ID = body.displaySchoolId; //Number(req.query);
-        const GENDER = "U";
-        let filter = {SCHOOL_ID, GENDER};
+    async function getSchoolEnrollmentData(filter) {
+
+        filter.GENDER = "U"
+        // if("displayRegion" in body)
+        // {
+        //     let regionKeys = await schoolCol.find({REGION_CD: body.displayRegion},
+        //         {projection:{ID: 1}})
+        //         .toArray()
+        //
+        //     regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        //     console.log("regionKeys:" + regionKeys)
+        //     filter.REGION_CD = body.displayRegion
+        //     filter.SCHOOL_ID = {$in: regionKeys}
+        // }
 
         // Fetch the records and the year mappings (map the ID to the actual year
         let [rows, yearMapping] = await Promise.all([
             aaeCol.find(filter, {
-                projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1}
+                projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1, REGION_CD: 1}
             })  // only get these attributes of the object
                 .sort({SCHOOL_YR_ID: 1})  // sort the list to be in order of year
                 .toArray(),
@@ -453,7 +463,33 @@ async function run() {
 
     app.post("/api/chooseDisplaySchool", requireAuth, async (req, res) => {
 
-        const data = await getSchoolEnrollmentData(req.body)
+        const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
+        let filter = {SCHOOL_ID, GENDER};
+        const data = await getSchoolEnrollmentData(filter)
+
+        res.json(data)
+
+    })
+
+    app.post("/api/chooseFilterRegion", requireAuth, async (req, res) => {
+
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        console.log("regionKeys: " + regionKeys)
+        let REGION_CD = req.body.displayRegion
+        let data
+        for (const key of regionKeys) {
+            const index = regionKeys.indexOf(key);
+            const SCHOOL_ID = key;
+            let filter = {SCHOOL_ID};
+            data = await getSchoolEnrollmentData(filter);
+            console.log(data)
+            // add to accumulators to get averages
+
+        }
 
         res.json(data)
 

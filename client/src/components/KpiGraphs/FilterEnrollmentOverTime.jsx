@@ -1,24 +1,26 @@
 import {useEffect, useState} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { chooseDisplaySchool } from "../../api/annualBenchmarkingApi.js";
+import {chooseDisplaySchool, chooseFilterRegion} from "../../api/annualBenchmarkingApi.js";
 
 export default function FilterEnrollmentOverTimeChart({
                                                     canvasId = "filterEnrollmentRate",
                                                     initialSchoolId = "",
                                                     selectedSchoolId = "",
-                                                    regions = []
+                                                    selectedRegion = ""
                                                 }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
+    const displayRegion = selectedRegion ||  "";
     const [selectedYearId, setSelectedYearId] = useState("");
-   //const [regions, setRegions] = useState([]);
 
     useEffect(() => {
         async function updateFilterEnrollmentOverTime() {
-            if (!displaySchoolId) return;
+            if (!displayRegion) return;
 
             try {
-                const payload = { displaySchoolId: Number(displaySchoolId) };
-                const res = await chooseDisplaySchool(payload);
+                const payload = {
+                    displaySchoolId: Number(displaySchoolId),
+                    displayRegion: displayRegion}
+                const res = await chooseFilterRegion(payload);
 
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
