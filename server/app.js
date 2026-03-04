@@ -24,8 +24,23 @@ function requireAuth(req, res, next) {
     }
 }
 
-function requireAdmin(req, res, next) {
-    if (!req.user || req.user.role !== "admin") {
+async function requireAdmin(req, res, next) {
+    if (!req.user || !req.user.username) {
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+    }
+
+    if (req.user.role === "admin") {
+        return next();
+    }
+
+    const user = await usersCollection.findOne(
+        {username: req.user.username},
+        {projection: {role: 1}}
+    );
+    if (user?.role !== "admin") {
         return res.status(403).json({
             success: false,
             message: "Admin access required."
@@ -95,7 +110,8 @@ async function run() {
                 message: `account is not registered as a ${role}`
             });
         }
-        if (role === "school" && !user.school) {
+        const resolvedSchoolName = user.schoolName || user.school || null;
+        if (role === "school" && !resolvedSchoolName) {
             return res.json({
                 success: false,
                 message: "School account is missing a school name"
@@ -104,7 +120,7 @@ async function run() {
         const payload = {
             username,
             role: user.role,
-            school: user.school || null
+            schoolName: resolvedSchoolName
         };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -115,15 +131,15 @@ async function run() {
             newUser: false,
             token,
             role: user.role,
-            school: user.school || null
+            schoolName: resolvedSchoolName
         });
     });
     app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
-        const {username, password, school} = req.body;
-        if (!username || !password || !school) {
+        const {username, password, schoolName} = req.body;
+        if (!username || !password || !schoolName) {
             return res.status(400).json({
                 success: false,
-                message: "Enter username, password or school"
+                message: "Enter username, password, and schoolName"
             });
         }
         const existingUser = await usersCollection.findOne({username});
@@ -137,7 +153,7 @@ async function run() {
             username,
             password,
             role: "school",
-            school: String(school).trim()
+            schoolName: String(schoolName).trim()
         });
         return res.json({
             success: true,
