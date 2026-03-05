@@ -18,6 +18,7 @@ export default function KpiDashboard({ username, onLogout }) {
     const [selectedSchoolId, setSelectedSchoolId] = useState("");
     const [selectedYearId, setSelectedYearId] = useState("");
     const [selectedRegion, setSelectedRegion] = useState("");
+    const [activeTab, setActiveTab] = useState("mySchool");
     const role = localStorage.getItem("role");
     const schoolName = localStorage.getItem("schoolName");
 
@@ -103,20 +104,22 @@ export default function KpiDashboard({ username, onLogout }) {
                                     </select>
                                 </div>
 
-                                <div className="col-md-4">
-                                    <label className="form-label">School Region</label>
-                                    <select
-                                        className="form-select"
-                                        value={selectedRegion}
-                                        onChange={(e) => setSelectedRegion(e.target.value)}
-                                    >
-                                        {regions.map((r) => (
-                                            <option key={r} value={r}>
-                                                {r}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
+                                {activeTab === "compareSchools" && (
+                                    <div className="col-md-4">
+                                        <label className="form-label">School Region</label>
+                                        <select
+                                            className="form-select"
+                                            value={selectedRegion}
+                                            onChange={(e) => setSelectedRegion(e.target.value)}
+                                        >
+                                            {regions.map((r) => (
+                                                <option key={r} value={r}>
+                                                    {r}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
 
@@ -124,59 +127,145 @@ export default function KpiDashboard({ username, onLogout }) {
                                 <div className="card-header">
                                     <ul className="nav nav-pills card-header-pills">
                                         <li className="nav-item">
-                                            <a className="nav-link active" href="#">My School</a>
+                                            <button
+                                                type="button"
+                                                className={`nav-link ${activeTab === "mySchool" ? "active" : ""}`}
+                                                onClick={() => setActiveTab("mySchool")}
+                                            >
+                                                My School
+                                            </button>
                                         </li>
                                         <li className="nav-item">
-                                            <a className="nav-link" href="#">Compare Schools</a>
+                                            <button
+                                                type="button"
+                                                className={`nav-link ${activeTab === "compareSchools" ? "active" : ""}`}
+                                                onClick={() => setActiveTab("compareSchools")}
+                                            >
+                                                Compare Schools
+                                            </button>
                                         </li>
                                     </ul>
                                 </div>
-                                    <div className="card-body">
-                                        <h5 className="card-title mb-3">Enrollment Statistics</h5>
+                                <div className="card-body">
+                                    {activeTab === "mySchool" && (
+                                        <>
+                                            <h5 className="card-title mb-3">Enrollment Statistics</h5>
 
-                                        <div className="row g-3">
-                                            <div className="col-md-6">
-                                                <EnrollmentOverTimeChart
-                                                    schools={schools}
-                                                    selectedSchoolId={selectedSchoolId}
-                                                    canvasId="enrollmentRate"
-                                                />
-                                            </div>
+                                            <div className="row g-3">
+                                                <div className="col-md-6">
+                                                    <EnrollmentOverTimeChart
+                                                        schools={schools}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        canvasId="enrollmentRate"
+                                                    />
+                                                </div>
 
-                                            <div className="col-md-6">
-                                                <EnrollmentByGenderChart
-                                                    schools={schools}
-                                                    years={years}
-                                                    selectedSchoolId={selectedSchoolId}
-                                                    selectedYearId={selectedYearId}
-                                                    canvasId="enrollmentByGender"
-                                                />
+                                                <div className="col-md-6">
+                                                    <EnrollmentByGenderChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="enrollmentByGender"
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
+                                        </>
+                                    )}
+
+                                    {activeTab === "compareSchools" && (
+                                        <>
+                                            <h5 className="card-title mb-3">Enrollment Statistics</h5>
+
+                                            <div className="row g-3">
+                                                <div className="col-md-6">
+                                                    <FilterEnrollmentOverTimeChart
+                                                        schools={schools}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedRegion={selectedRegion}
+                                                        canvasId="compareFilterEnrollmentRate"
+                                                    />
+                                                </div>
+
+                                                <div className="col-md-6">
+                                                    <EnrollmentByGenderChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="compareEnrollmentByGender"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
 
                             </div>
 
                             <div className="card text-center">
                                 <div className="card-body">
-                                    <h5 className="card-title mb-3">Attrition Statistics</h5>
+                                    {activeTab === "mySchool" && (
+                                        <>
+                                            <h5 className="card-title mb-3">Attrition Statistics</h5>
 
-                                    <div className="row g-3">
-                                        <div className="col-md-6">
-                                            <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />
-                                        </div>
+                                            <div className="row g-3 justify-content-center align-items-start">
+                                                <div className="col-md-6 col-lg-6">
+                                                    <RetentionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="retentionYOY"
+                                                    />
+                                                    <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />
+                                                </div>
+                                                <div className="col-md-6 col-lg-6">
+                                                    <AttritionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="attritionYOY"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
 
-                                        <div className="col-md-6">
-                                            <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
-                                            <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>
-                                        </div>
-                                    </div>
+                                    {activeTab === "compareSchools" && (
+                                        <>
+                                            <h5 className="card-title mb-3">Attrition Statistics</h5>
+
+                                            <div className="row g-3 justify-content-center align-items-start">
+                                                <div className="col-md-6 col-lg-6">
+                                                    <RetentionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="compareRetentionYOY"
+                                                    />
+                                                    <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="compareCombinedYOY" />
+                                                </div>
+                                                <div className="col-md-6 col-lg-6">
+                                                    <AttritionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="compareAttritionYOY"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="row g-4">
-                                <FilterEnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} selectedRegion={selectedRegion} canvasId={"filterEnrollmentRate"}/>
-                            </div>
+                            {/*<div className="row g-4">*/}
+                            {/*    <FilterEnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} selectedRegion={selectedRegion} canvasId={"filterEnrollmentRate"}/>*/}
+                            {/*</div>*/}
 
                         </div>
                     </div>
@@ -185,4 +274,3 @@ export default function KpiDashboard({ username, onLogout }) {
         </>
     );
 }
-

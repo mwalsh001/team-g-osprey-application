@@ -43,12 +43,12 @@ export default function FilterEnrollmentOverTimeChart({
                             labels,
                             datasets: [
                                 {
-                                    label: `Enrollment by year in region ${selectedRegion}`,
-                                    data: res.map((row) => row.NR_ENROLLED),
-                                },
-                                {
                                     label: `Enrollment by year for school ${selectedSchoolId}`,
                                     data: alignedRes2
+                                },
+                                {
+                                    label: `Enrollment by year in region ${selectedRegion}`,
+                                    data: res.map((row) => row.NR_ENROLLED),
                                 },
                             ],
                         },

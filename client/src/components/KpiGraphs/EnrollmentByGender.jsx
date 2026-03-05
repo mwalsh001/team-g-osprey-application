@@ -58,8 +58,8 @@ export default function EnrollmentByGenderChart({
                 </h6>
 
                 <div className="d-flex justify-content-center">
-                    <div style={{ width: "90%", height: "250px" }}>
-                        <canvas id={canvasId}></canvas>
+                    <div className="mx-auto" style={{ width: "90%", height: "250px" }}>
+                        <canvas id={canvasId} className="d-block mx-auto"></canvas>
                     </div>
                 </div>
             </div>
