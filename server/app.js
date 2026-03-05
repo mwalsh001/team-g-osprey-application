@@ -24,6 +24,16 @@ function requireAuth(req, res, next) {
     }
 }
 
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== "admin") {
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+    }
+    next();
+}
+
 const url = process.env.MONGODB_URI;
 const dbconnect = new MongoClient(url);
 let usersCollection = null;
@@ -47,30 +57,95 @@ async function run() {
 
     // Login
     app.post("/api/login", async (req, res) => {
-        const {username, password} = req.body;
-
-        let user = await usersCollection.findOne({username});
-        const payload = {
-            username
+        const {username, password, role} = req.body;
+        if (!username || !password || !["school", "admin"].includes(role)) {
+            return res.json({
+                success: false,
+                message: "Valid username, password, and role are required."
+            });
         }
+        let user = await usersCollection.findOne({username});
         if (!user) {
-            await usersCollection.insertOne({username, password});
-            const token = jwt.sign(
-                payload,
-                process.env.JWT_SECRET,
-                {expiresIn: process.env.JWT_EXPIRES_IN}
-            );
-            return res.json({success: true, newUser: true, token});
+            return res.json({
+                success: false,
+                message: "Account not found"
+            });
         }
 
         if (user.password !== password) {
-            return res.json({success: false, message: "Wrong password"});
+            return res.json({ success: false, message: "Wrong password" });
         }
+
+        if (!user.role) {
+            if (role === "school") {
+                await usersCollection.updateOne(
+                    {username},
+                    {$set: {role: "school"}}
+                );
+                user = {...user, role: "school"};
+            } else {
+                return res.json({
+                    success: false,
+                    message: "account is not registered as an admin."
+                });
+            }
+        }
+        if (user.role !== role) {
+            return res.json({
+                success: false,
+                message: `account is not registered as a ${role}`
+            });
+        }
+        const resSchoolName = user.schoolName || user.school || null;
+        if (role === "school" && !resSchoolName) {
+            return res.json({
+                success: false,
+                message: "School account is missing a school name"
+            });
+        }
+        const payload = {
+            username,
+            role: user.role,
+            schoolName: resSchoolName
+        };
 
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
-        return res.json({ success: true, newUser: false, token, schoolName: user.schoolName });
+        return res.json({
+            success: true,
+            newUser: false,
+            token,
+            role: user.role,
+            schoolName: resSchoolName
+        });
+    });
+
+    app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
+        const {username, password, schoolName} = req.body;
+        if (!username || !password || !schoolName) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter username, password, and schoolName"
+            });
+        }
+        const existingUser = await usersCollection.findOne({username});
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: "Account with this username exists"
+            });
+        }
+        await usersCollection.insertOne({
+            username,
+            password,
+            role: "school",
+            schoolName: String(schoolName).trim()
+        });
+        return res.json({
+            success: true,
+            message: "School account created"
+        });
     });
 
     app.get("/api/schools", requireAuth, async (req, res) => {
@@ -454,11 +529,11 @@ async function run() {
         const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
 
         data = data.map((current) => {
-                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-                return {
-                    SCHOOL_YR_ID: actualYear,
-                    NR_ENROLLED: current.NR_ENROLLED
-                };
+            const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+            return {
+                SCHOOL_YR_ID: actualYear,
+                NR_ENROLLED: current.NR_ENROLLED
+            };
         })
         return data
     }
@@ -902,13 +977,13 @@ async function run() {
     });
 }
 
-        const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-        run()
-            .then(() => {
-                app.listen(PORT, () => console.log("Listening on", PORT));
-            })
-            .catch((err) => {
-                console.error("Failed to start server:", err);
-                process.exit(1);
-            });
+run()
+    .then(() => {
+        app.listen(PORT, () => console.log("Listening on", PORT));
+    })
+    .catch((err) => {
+        console.error("Failed to start server:", err);
+        process.exit(1);
+    });
