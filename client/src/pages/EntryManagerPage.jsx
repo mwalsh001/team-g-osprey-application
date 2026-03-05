@@ -87,7 +87,16 @@ export default function AnnualFormPage({ username, onLogout }) {
                 setSchools(s);
                 setYears(y);
                 setGrades(g);
-                if (s?.length && !schoolId) setSchoolId(String(s[0].id));
+
+                if (role === "school"){
+                    const userSchoolName = localStorage.getItem("schoolName");
+                    const userSchool = s.find((school) => String(school.name) === String(userSchoolName));
+                    if (userSchool) {
+                        setSchoolId(String(userSchool.id));
+                    }
+                } else{
+                    if (s?.length && !schoolId) setSchoolId(String(s[0].id));
+                }
                 if (y?.length && !schoolYearId) setSchoolYearId(String(y[0].id));
                 if (g?.length && !gradeId) setGradeId(String(g[0].id));
             } catch (e) {
@@ -329,17 +338,25 @@ export default function AnnualFormPage({ username, onLogout }) {
             <div className="row g-3 mb-4">
                 <div className="col-md-4">
                     <label className="form-label">School</label>
-                    <select
-                        className="form-select"
-                        value={schoolId}
-                        onChange={(e) => setSchoolId(e.target.value)}
-                    >
-                        {schools.map((s) => (
-                            <option key={s.id} value={String(s.id)}>
-                                {s.name} (ID: {s.id})
-                            </option>
-                        ))}
-                    </select>
+                    {role === "school" && selectedSchool ? (
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={selectedSchool.name}
+                            disabled />
+                    ):(
+                        <select
+                            className="form-select"
+                            value={schoolId}
+                            onChange={(e) => setSchoolId(e.target.value)}
+                        >
+                            {schools.map((s) => (
+                                <option key={s.id} value={String(s.id)}>
+                                    {s.name} (ID: {s.id})
+                                </option>
+                            ))}
+                        </select>
+                    )}
                 </div>
 
                 <div className="col-md-4">
