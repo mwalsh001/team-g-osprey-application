@@ -839,7 +839,7 @@ async function run() {
         });
     })
 
-    //CURRENT BUG: attrition percent undefined and most common reason not found
+
     app.post("/api/attritionYear", requireAuth, async (req, res) => {
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
@@ -884,11 +884,11 @@ async function run() {
             {reason: "Did Not Return", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0)},
         ];
 
-        const mostCommon = reasons.reduce((max, curr) => (curr.value > max.value ? curr : max));
-
         res.json({
             attritionRate: Number(attritionRate.toFixed(2)),
-            mostCommon: mostCommon.reason
+            dissOrWthd: reasons[0].value,
+            notInvited: reasons[1].value,
+            notReturn: reasons[2].value
         });
 
 

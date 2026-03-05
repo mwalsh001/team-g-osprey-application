@@ -12,7 +12,9 @@ export default function AttritionYOYChart({
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [attritionRate, setAttritionRate] = useState(null);
-    const [mostCommonReason, setMostCommonReason] = useState(null);
+    const [studentsDismissed, setStudentsDismissed] = useState(null);
+    const [studentsNotInvited, setStudentsNotInvited] = useState(null);
+    const [studentsNotReturn, setStudentsNotReturn] = useState(null);
 
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
 
@@ -34,7 +36,9 @@ export default function AttritionYOYChart({
                 });
                 if (res) {
                     setAttritionRate(res.attritionRate);
-                    setMostCommonReason(res.mostCommon);
+                    setStudentsDismissed(res.dissOrWthd);
+                    setStudentsNotInvited(res.notInvited);
+                    setStudentsNotReturn(res.notReturn);
                 }
             } catch (err) {
                 console.error("Attrition rate failed:", err);
@@ -99,8 +103,14 @@ export default function AttritionYOYChart({
             <div>
                 <p>Attrition Rate</p>
                 {attritionRate !== null ? `${attritionRate}%` : "--"}
-                <p>Most Common Reason</p>
-                {mostCommonReason ?? "--"}
+                <p>Reason for Leaving Breakdown</p>
+                <p>Dismissed or Withdrew During the Year</p>
+                {studentsDismissed !== null ? `${studentsDismissed}` : "--" }
+                <p>Not invited to Return</p>
+                {studentsNotInvited !== null ? `${studentsNotInvited}` : "--"}
+                <p>Did Not Return by Choice</p>
+                {studentsNotReturn !== null ? `${studentsNotReturn}` : "--"}
+
             </div>
             <canvas id={canvasId}></canvas>
         </div>
