@@ -53,7 +53,7 @@ export default function EnrollmentOverTimeChart({
                 </h6>
 
                 <div className="d-flex justify-content-center">
-                    <div style={{ width: "90%", height: "250px" }}>
+                    <div style={{ width: "90%", height: "300px" }}>
                         <canvas id={canvasId}></canvas>
                     </div>
                 </div>

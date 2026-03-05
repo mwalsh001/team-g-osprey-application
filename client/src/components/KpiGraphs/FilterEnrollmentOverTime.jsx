@@ -62,8 +62,15 @@ export default function FilterEnrollmentOverTimeChart({
     }, [canvasId, displayRegion, selectedSchoolId]);
 
     return (
-            <div>
-                <canvas id={canvasId}></canvas>
+        <div className="card shadow-sm">
+            <div className="card-body">
+                <h6 className="card-title text-center mb-3">
+                    Enrollment Over Time by Region
+                </h6>
+                <div style={{ height: "300px" }}>
+                    <canvas id={canvasId}></canvas>
+                </div>
             </div>
+        </div>
     );
 }
