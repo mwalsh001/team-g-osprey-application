@@ -267,11 +267,6 @@ export default function KpiDashboard({ username, onLogout }) {
                                     )}
                                 </div>
                             </div>
-
-                            {/*<div className="row g-4">*/}
-                            {/*    <FilterEnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} selectedRegion={selectedRegion} canvasId={"filterEnrollmentRate"}/>*/}
-                            {/*</div>*/}
-
                         </div>
                     </div>
                 </div>
