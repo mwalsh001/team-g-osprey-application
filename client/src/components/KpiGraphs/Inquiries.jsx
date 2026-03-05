@@ -17,13 +17,15 @@ export default function InquiriesYOYChart({
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
+                    console.log("Inquiries single school")
+                    console.log(res);
                     new Chart(document.getElementById(canvasId), {
                         type: "line",
                         data: {
                             labels: res.map((row) => row.SCHOOL_YR_ID),
                             datasets: [{
                                 label: "Change in Total Inquiries",
-                                data: res.map((row) => row.percentage),
+                                data: res.map((row) => row.NR_ENROLLED),
                             }],
                         },
                         options: {

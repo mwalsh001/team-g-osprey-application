@@ -55,6 +55,8 @@ export const chooseFilterRegion= (payload) => apiPost("/api/chooseFilterRegion",
 export const chooseDisplayYear = (payload) => apiPost("/api/chooseDisplayYear", payload, "Choose display year failed");
 
 export const chooseDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/chooseDisplaySchoolInquiriesYOY", payload, "Choose display year failed");
+export const chooseFilterDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/chooseFilterDisplaySchoolInquiriesYOY", payload, "Choose display year failed");
+
 export const retentionYOY = (payload) => apiPost("/api/retentionYOY", payload, "Retention YOY failed");
 export const attritionYOY = (payload) => apiPost("/api/attritionYOY", payload, "Attrition YOY failed");
 

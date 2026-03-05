@@ -482,7 +482,7 @@ async function run() {
             .toArray()
 
         regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
-        console.log("regionKeys: " + regionKeys)
+        //console.log("regionKeys: " + regionKeys)
         let REGION_CD = req.body.displayRegion
         let data
         const GENDER = "U"
@@ -510,31 +510,9 @@ async function run() {
 
     })
 
-    app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
-
-        const SCHOOL_ID = req.body.displaySchoolId;
-        const ENROLLMENT_TYPE_CD = "INQUIRIES";
-        const GENDER = "U";
-
-        // Fetch the records and the year mappings (map the ID to the actual year
-        const [rows, yearMapping] = await Promise.all([
-            aaeCol.find({
-                SCHOOL_ID,
-                ENROLLMENT_TYPE_CD,
-                GENDER
-            })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
-                .sort({SCHOOL_YR_ID: 1})
-                .toArray(),
-            schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
-        ]);
-        // console.log("yearMapping[1].ID: " + yearMapping[1].ID);
-        // console.log("yearMapping[1].SCHOOL_YEAR: " + yearMapping[1].SCHOOL_YEAR);
-
-        // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
-        // This creates an array where index is ID and value is the actual year
-        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-        //console.log("yearLookup[1]: "+ yearLookup[1]);
-        //console.log("yearLookup[1].SCHOOL_YEAR: "+ yearLookup[1].SCHOOL_YEAR);``
+    async function getSchoolInquiriesYOY(filter) {
+        let rows = await aaeCol.find(filter)  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
+            .sort({SCHOOL_YR_ID: 1}).toArray();
 
         // Calculate percentages for corresponding year
         const report = rows
@@ -554,21 +532,124 @@ async function run() {
                     : 0;
                 //console.log("percentChange: "+percentChange);
 
-                // Swap the Foreign Key for the actual year
-                //console.log("current.SCHOOL_YR_ID: "+current.SCHOOL_YR_ID);
-                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-                //console.log("actualYear: "+actualYear);
-
                 return {
-                    SCHOOL_YR_ID: actualYear,
+                    SCHOOL_YR_ID: current.SCHOOL_YR_ID,
                     //NR_Enrolled: v2,
-                    percentage: percentChange
+                    NR_ENROLLED: percentChange
                     //percentage: `${percentChange.toFixed(2)}%`
                 };
             })
             .filter(Boolean); // Remove the 'null' from the first year
-        //console.log(report);
-        res.json(report);
+
+        return report;
+
+    }
+
+    app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
+
+        const SCHOOL_ID = req.body.displaySchoolId;
+        const ENROLLMENT_TYPE_CD = "INQUIRIES";
+        const GENDER = "U";
+
+        let filter = {SCHOOL_ID, GENDER, ENROLLMENT_TYPE_CD};
+        let data = await getSchoolInquiriesYOY(filter);
+        // console.log("BEFORE MAP YEARS");
+        // console.log(data);
+        data = await yearIndexToActual(data);  // map the year index to actual year
+        // console.log("AFTER MAP YEARS");
+        // console.log(data);
+        res.json(data);
+
+        // // Fetch the records and the year mappings (map the ID to the actual year
+        // const [rows, yearMapping] = await Promise.all([
+        //     aaeCol.find({
+        //         SCHOOL_ID,
+        //         ENROLLMENT_TYPE_CD,
+        //         GENDER
+        //     })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
+        //         .sort({SCHOOL_YR_ID: 1})
+        //         .toArray(),
+        //     schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
+        // ]);
+        // // console.log("yearMapping[1].ID: " + yearMapping[1].ID);
+        // // console.log("yearMapping[1].SCHOOL_YEAR: " + yearMapping[1].SCHOOL_YEAR);
+        //
+        // // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
+        // // This creates an array where index is ID and value is the actual year
+        // const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+        // //console.log("yearLookup[1]: "+ yearLookup[1]);
+        // //console.log("yearLookup[1].SCHOOL_YEAR: "+ yearLookup[1].SCHOOL_YEAR);``
+        //
+        // // Calculate percentages for corresponding year
+        // const report = rows
+        //     // Filter out any objects where NR_ENROLLED is null or undefined
+        //     .filter(row => row.NR_ENROLLED !== null && row.NR_ENROLLED !== undefined)
+        //     .map((current, index, validRows) => {
+        //         // If it's the first valid year, can't calculate % change yet
+        //         if (index === 0) return null;
+        //
+        //         const previous = validRows[index - 1];
+        //         const v1 = previous.NR_ENROLLED;
+        //         const v2 = current.NR_ENROLLED;
+        //
+        //         // Calculate the percentage: ((year2 - year1) / year1) * 100
+        //         const percentChange = v1 !== 0
+        //             ? ((v2 - v1) / v1) * 100
+        //             : 0;
+        //         //console.log("percentChange: "+percentChange);
+        //
+        //         // Swap the Foreign Key for the actual year
+        //         //console.log("current.SCHOOL_YR_ID: "+current.SCHOOL_YR_ID);
+        //         const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+        //         //console.log("actualYear: "+actualYear);
+        //
+        //         return {
+        //             SCHOOL_YR_ID: actualYear,
+        //             //NR_Enrolled: v2,
+        //             percentage: percentChange
+        //             //percentage: `${percentChange.toFixed(2)}%`
+        //         };
+        //     })
+        //     .filter(Boolean); // Remove the 'null' from the first year
+        // //console.log(report);
+        // res.json(report);
+    })
+
+    app.post("/api/chooseFilterDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
+
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        console.log("Regionkeys: "+regionKeys);
+        //console.log("regionKeys: " + regionKeys)
+        //let REGION_CD = req.body.displayRegion
+        let data
+        const GENDER = "U"
+        const ENROLLMENT_TYPE_CD = "INQUIRIES";
+        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+
+        for (const key of regionKeys) {
+            //const index = regionKeys.indexOf(key);
+            const SCHOOL_ID = key;
+            let filter = {SCHOOL_ID, GENDER, ENROLLMENT_TYPE_CD};
+            data = await getSchoolInquiriesYOY(filter);
+            // add to accumulators to get averages
+            for (const d of data){
+                yearAccs[0][d.SCHOOL_YR_ID] += d.NR_ENROLLED
+                yearAccs[1][d.SCHOOL_YR_ID] += 1
+            }
+        }
+        let avgArray = Array(34)
+        for (let i = 1; i < avgArray.length; i++){
+            avgArray[i] = {SCHOOL_YR_ID: i, NR_ENROLLED: yearAccs[0][i]/yearAccs[1][i]}
+        }
+        avgArray = await yearIndexToActual(avgArray)
+        avgArray = avgArray.slice(1, 34)
+        //console.log(avgArray);
+        res.json(avgArray)
+
     })
 
     app.post("/api/retentionYOY", requireAuth, async (req, res) => {
