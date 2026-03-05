@@ -204,7 +204,7 @@ export default function KpiDashboard({ username, onLogout }) {
 
                             </div>
 
-                            <div className="card text-center">
+                            <div className="card text-center mt-4">
                                 <div className="card-body">
                                     {activeTab === "mySchool" && (
                                         <>
@@ -260,6 +260,86 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
                                                         canvasId="compareAttritionYOY"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="card text-center mt-4">
+                                <div className="card-body">
+                                    {activeTab === "mySchool" && (
+                                        <>
+                                            <h5 className="card-title mb-3 text-start border-start border-3 border-primary ps-3">
+                                                Attrition Statistics (SOC)
+                                            </h5>
+
+                                            <div className="row g-3 justify-content-center align-items-start">
+                                                <div className="col-md-6 col-lg-6">
+                                                    <RetentionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="retentionYOYSoc"
+                                                        deriveFromAttrition={true}
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
+                                                    />
+                                                    <CombinedYOYChart
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        canvasId="combinedYOYSoc"
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
+                                                        deriveRetentionFromAttrition={true}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6 col-lg-6">
+                                                    <AttritionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="attritionYOYSoc"
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {activeTab === "compareSchools" && (
+                                        <>
+                                            <h5 className="card-title mb-3 text-start border-start border-3 border-primary ps-3">
+                                                Attrition Statistics (SOC)
+                                            </h5>
+
+                                            <div className="row g-3 justify-content-center align-items-start">
+                                                <div className="col-md-6 col-lg-6">
+                                                    <RetentionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="compareRetentionYOYSoc"
+                                                        deriveFromAttrition={true}
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
+                                                    />
+                                                    <CombinedYOYChart
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        canvasId="compareCombinedYOYSoc"
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
+                                                        deriveRetentionFromAttrition={true}
+                                                    />
+                                                </div>
+                                                <div className="col-md-6 col-lg-6">
+                                                    <AttritionYOYChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        canvasId="compareAttritionYOYSoc"
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
                                                     />
                                                 </div>
                                             </div>

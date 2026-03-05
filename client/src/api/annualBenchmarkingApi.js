@@ -57,6 +57,7 @@ export const chooseDisplayYear = (payload) => apiPost("/api/chooseDisplayYear", 
 export const chooseDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/chooseDisplaySchoolInquiriesYOY", payload, "Choose display year failed");
 export const retentionYOY = (payload) => apiPost("/api/retentionYOY", payload, "Retention YOY failed");
 export const attritionYOY = (payload) => apiPost("/api/attritionYOY", payload, "Attrition YOY failed");
+export const attritionRatesYearly = (payload) => apiPost("/api/attritionRatesYearly", payload, "Attrition yearly rates failed");
 
 export const getRetention = (payload) => apiPost("/api/retention", payload, "Get retention failed");
 export const getAttritionRate = (payload) => apiPost("/api/attritionYear", payload, "Get attrition failed");
