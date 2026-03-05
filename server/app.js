@@ -70,7 +70,7 @@ async function run() {
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
-        return res.json({ success: true, newUser: false, token });
+        return res.json({ success: true, newUser: false, token, schoolName: user.schoolName });
     });
 
     app.get("/api/schools", requireAuth, async (req, res) => {

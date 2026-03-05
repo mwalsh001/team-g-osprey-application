@@ -24,7 +24,15 @@ export default function KpiDashboard({ username, onLogout }) {
                 const [s, y] = await Promise.all([getSchools(), getSchoolYears()]);
                 setSchools(s);
                 setYears(y);
-                if (s?.length && !selectedSchoolId) setSelectedSchoolId(String(s[0].id));
+                if (role === "school") {
+                    const userSchoolName = localStorage.getItem("schoolName");
+                    const userSchool = s.find((school) => String(school.name) === String(userSchoolName));
+                    if (userSchool) {
+                        setSelectedSchoolId(String(userSchool.id));
+                    }
+                } else{
+                    if (s?.length && !selectedSchoolId) setSelectedSchoolId(String(s[0].id));
+                }
                 if (y?.length && !selectedYearId) setSelectedYearId(String(y[0].id));
             } catch (e) {
                 alert("Unauthorized");
@@ -53,17 +61,25 @@ export default function KpiDashboard({ username, onLogout }) {
                             <div className="row g-3 mb-4">
                                 <div className="col-md-4">
                                     <label className="form-label">School</label>
-                                    <select
-                                        className="form-select"
-                                        value={selectedSchoolId}
-                                        onChange={(e) => setSelectedSchoolId(e.target.value)}
-                                    >
-                                        {schools.map((s) => (
-                                            <option key={s.id} value={String(s.id)}>
-                                                {s.name} (ID: {s.id})
-                                            </option>
-                                        ))}
-                                    </select>
+                                    {role === "school" ? (
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={schools.find(s=> String(s.id) === String(selectedSchoolId))?.name}
+                                            disabled />
+                                    ):(
+                                        <select
+                                            className="form-select"
+                                            value={selectedSchoolId}
+                                            onChange={(e) => setSelectedSchoolId(e.target.value)}
+                                        >
+                                            {schools.map((s) => (
+                                                <option key={s.id} value={String(s.id)}>
+                                                    {s.name} (ID: {s.id})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    )}
                                 </div>
 
                                 <div className="col-md-4">
