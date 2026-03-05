@@ -14,7 +14,9 @@ export default function EnrollmentOverTimeChart({
             if (!displaySchoolId) return;
 
             try {
-                const payload = { displaySchoolId: Number(displaySchoolId) };
+                const payload = {
+                    displaySchoolId: Number(displaySchoolId)
+                };
                 const res = await chooseDisplaySchool(payload);
 
                 if (res) {

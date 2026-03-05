@@ -19,6 +19,7 @@ async function apiPost(url, body, errorMessage) {
 // Lookups
 export const getSchools = () => apiGet("/api/schools", "Get schools failed");
 export const getSchoolYears = () => apiGet("/api/schoolYears", "Get school years failed");
+export const getSchoolRegions = () => apiGet("/api/schoolRegions", "Get school regions failed");
 export const getGrades = () => apiGet("/api/grades", "Get grades failed");
 
 // AAE
@@ -50,6 +51,7 @@ export const addAttritionSoc = (payload) => apiPost("/api/attritionSoc", payload
 export const editAttritionSoc = (payload) => apiPost("/api/attritionSoc/edit", payload, "Edit attrition SOC failed");
 
 export const chooseDisplaySchool = (payload) => apiPost("/api/chooseDisplaySchool", payload, "Choose display school failed");
+export const chooseFilterRegion= (payload) => apiPost("/api/chooseFilterRegion", payload, "Choose filter region school failed");
 export const chooseDisplayYear = (payload) => apiPost("/api/chooseDisplayYear", payload, "Choose display year failed");
 
 export const chooseDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/chooseDisplaySchoolInquiriesYOY", payload, "Choose display year failed");
