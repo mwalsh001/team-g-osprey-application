@@ -10,7 +10,6 @@ export default function FilterEnrollmentOverTimeChart({
                                                 }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displayRegion = selectedRegion ||  "";
-    const [selectedYearId, setSelectedYearId] = useState("");
 
     useEffect(() => {
         async function updateFilterEnrollmentOverTime() {
