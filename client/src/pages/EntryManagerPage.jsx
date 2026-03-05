@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
+import JSVoice from "jsvoice";
 
 import {
     addAAE,
