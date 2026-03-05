@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
 import {chooseDisplaySchool, chooseFilterRegion} from "../../api/annualBenchmarkingApi.js";
 
@@ -10,7 +10,6 @@ export default function FilterEnrollmentOverTimeChart({
                                                 }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displayRegion = selectedRegion ||  "";
-    const [selectedYearId, setSelectedYearId] = useState("");
 
     useEffect(() => {
         async function updateFilterEnrollmentOverTime() {
@@ -43,12 +42,12 @@ export default function FilterEnrollmentOverTimeChart({
                             labels,
                             datasets: [
                                 {
-                                    label: `Enrollment by year in region ${selectedRegion}`,
-                                    data: res.map((row) => row.NR_ENROLLED),
-                                },
-                                {
                                     label: `Enrollment by year for school ${selectedSchoolId}`,
                                     data: alignedRes2
+                                },
+                                {
+                                    label: `Enrollment by year in region ${selectedRegion}`,
+                                    data: res.map((row) => row.NR_ENROLLED),
                                 },
                             ],
                         },
@@ -63,8 +62,15 @@ export default function FilterEnrollmentOverTimeChart({
     }, [canvasId, displayRegion, selectedSchoolId]);
 
     return (
-            <div>
-                <canvas id={canvasId}></canvas>
+        <div className="card shadow-sm">
+            <div className="card-body">
+                <h6 className="card-title text-center mb-3">
+                    Enrollment Over Time by Region
+                </h6>
+                <div style={{ height: "300px" }}>
+                    <canvas id={canvasId}></canvas>
+                </div>
             </div>
+        </div>
     );
 }

@@ -51,9 +51,17 @@ export default function EnrollmentByGenderChart({
     }, [displaySchoolId, displaySchoolYear, canvasId]);
 
     return (
-        <div>
-            <div>
-                <canvas id={canvasId}></canvas>
+        <div className="card shadow-sm">
+            <div className="card-body">
+                <h6 className="card-title text-center mb-3">
+                    Enrollment By Gender
+                </h6>
+
+                <div className="d-flex justify-content-center">
+                    <div className="mx-auto" style={{ width: "90%", height: "300px" }}>
+                        <canvas id={canvasId} className="d-block mx-auto"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     );
