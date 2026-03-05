@@ -1,7 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from "react";
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
-import JSVoice from "jsvoice";
+import SpeechRecognition, {useSpeechRecognition} from "react-speech-recognition";
 
 import {
     addAAE,
@@ -80,6 +80,16 @@ export default function AnnualFormPage({ username, onLogout }) {
         [grades, gradeId]
     );
 
+    const {
+        transcript,
+        listening,
+        resetTranscript,
+        browserSupportsSpeechRecognition
+    } = useSpeechRecognition();
+
+    const startVoice = () => SpeechRecognition.startListening({continuous: true, language: "en-US"});
+    const stopVoice = () => SpeechRecognition.stopListening();
+
     // load lookups
     useEffect(() => {
         async function loadLookups() {
@@ -103,6 +113,14 @@ export default function AnnualFormPage({ username, onLogout }) {
         void loadLookups();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+    //voice test
+    useEffect(() => {
+        const text = transcript.trim().toLowerCase();
+        if (text === "hello") {
+            setNotify("pass");
+            resetTranscript();
+        }
+    }, [transcript, resetTranscript]);
 
     // load annual data
     useEffect(() => {
@@ -504,7 +522,17 @@ export default function AnnualFormPage({ username, onLogout }) {
                             <AnnualContextHeader/>
                             <AnnualSelectors/>
                             <SectionTabs/>
-
+                            <div className="d-flex gap-2 mb-3">
+                                <button type="button" className="btn btn-outline-secondary" onClick={startVoice}>
+                                    Start Voice
+                                </button>
+                                <button type="button" className="btn btn-outline-secondary" onClick={stopVoice}>
+                                    Stop Voice
+                                </button>
+                                <button type="button" className="btn btn-outline-secondary" onClick={resetTranscript}>
+                                    Clear
+                                </button>
+                            </div>
                             {notify && <div className="alert alert-info py-2">{notify}</div>}
 
                             <div className="card">
