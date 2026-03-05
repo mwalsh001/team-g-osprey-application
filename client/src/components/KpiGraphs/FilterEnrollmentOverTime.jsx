@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
 import {chooseDisplaySchool, chooseFilterRegion} from "../../api/annualBenchmarkingApi.js";
 
