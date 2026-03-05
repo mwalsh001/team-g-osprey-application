@@ -95,14 +95,24 @@ export default function AttritionYOYChart({
     }, [displaySchoolId, canvasId]);
 
     return (
-        <div>
-            <div>
-                <p>Attrition Rate</p>
-                {attritionRate !== null ? `${attritionRate}%` : "--"}
-                <p>Most Common Reason</p>
-                {mostCommonReason ?? "--"}
+        <div className="d-flex flex-column gap-3">
+            <div className="card shadow-sm text-center">
+                <div className="card-body">
+                    <h6 className="card-title text-muted mb-1">Attrition Rate</h6>
+                    <div className="fs-4 fw-semibold">
+                        {attritionRate !== null ? `${attritionRate}%` : "--"}
+                    </div>
+                </div>
             </div>
-            <canvas id={canvasId}></canvas>
+
+            <div className="card shadow-sm text-center">
+                <div className="card-body">
+                    <h6 className="card-title text-muted">Most Common Reason</h6>
+                    <div className="fs-6 fw-medium">
+                        {mostCommonReason ?? "--"}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

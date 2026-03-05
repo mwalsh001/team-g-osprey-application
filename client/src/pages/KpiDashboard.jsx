@@ -7,8 +7,6 @@ import EnrollmentOverTimeChart from "../components/KpiGraphs/EnrollmentOverTime.
 import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.jsx";
 import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
 import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
-import InquiriesYOYChart from "../components/KpiGraphs/Inquiries.jsx";
-import InquiriesByGenderChart from "../components/KpiGraphs/InquiriesByGender.jsx";
 import CombinedYOYChart from "../components/KpiGraphs/CombinedYoY.jsx";
 
 export default function KpiDashboard({ username, onLogout }) {
@@ -84,15 +82,65 @@ export default function KpiDashboard({ username, onLogout }) {
                                 </div>
                             </div>
 
-                            <div className="row g-4">
-                                <EnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} canvasId="enrollmentRate"/>
-                                <EnrollmentByGenderChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="enrollmentByGender"/>
-                                <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
-                                <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>
-                                <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />
-                                <InquiriesYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesYOY"/>
-                                <InquiriesByGenderChart selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesByGender"/>
+
+                            <div className="card text-center">
+                                <div className="card-header">
+                                    <ul className="nav nav-pills card-header-pills">
+                                        <li className="nav-item">
+                                            <a className="nav-link active" href="#">My School</a>
+                                        </li>
+                                        <li className="nav-item">
+                                            <a className="nav-link" href="#">Compare Schools</a>
+                                        </li>
+                                    </ul>
+                                </div>
+                                    <div className="card-body">
+                                        <h5 className="card-title mb-3">Enrollment Statistics</h5>
+
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <EnrollmentOverTimeChart
+                                                    schools={schools}
+                                                    selectedSchoolId={selectedSchoolId}
+                                                    canvasId="enrollmentRate"
+                                                />
+                                            </div>
+
+                                            <div className="col-md-6">
+                                                <EnrollmentByGenderChart
+                                                    schools={schools}
+                                                    years={years}
+                                                    selectedSchoolId={selectedSchoolId}
+                                                    selectedYearId={selectedYearId}
+                                                    canvasId="enrollmentByGender"
+                                                />
+                                            </div>
+                                        </div>
+                                </div>
+
                             </div>
+
+                            <div className="card text-center">
+                                <div className="card-body">
+                                    <h5 className="card-title mb-3">Attrition Statistics</h5>
+
+                                    <div className="row g-3">
+                                        <div className="col-md-6">
+                                            <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />
+                                        </div>
+
+                                        <div className="col-md-6">
+                                            <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
+                                            <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            {/*    <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />*/}
+                            {/*    <InquiriesYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesYOY"/>*/}
+                            {/*    <InquiriesByGenderChart selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesByGender"/>*/}
                         </div>
                     </div>
                 </div>
