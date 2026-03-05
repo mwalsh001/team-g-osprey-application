@@ -419,54 +419,58 @@ async function run() {
     });
 
     async function getSchoolEnrollmentData(filter) {
+        let rows;
+        return rows = await aaeCol.aggregate([
+            {$match: {...filter, NR_ENROLLED: {$ne: null}}},
 
-        filter.GENDER = "U"
-        // if("displayRegion" in body)
-        // {
-        //     let regionKeys = await schoolCol.find({REGION_CD: body.displayRegion},
-        //         {projection:{ID: 1}})
-        //         .toArray()
-        //
-        //     regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
-        //     console.log("regionKeys:" + regionKeys)
-        //     filter.REGION_CD = body.displayRegion
-        //     filter.SCHOOL_ID = {$in: regionKeys}
-        // }
+            // Combine rows with same SCHOOL_ID, GENDER, SCHOOL_YR_ID
+            {
+                $group: {
+                    _id: "$SCHOOL_YR_ID",
+                    NR_ENROLLED: {$sum: "$NR_ENROLLED"}
+                }
+            },
 
+            // Sort by year
+            {$sort: {_id: 1}},
+
+            // Rename fields for consistency
+            {
+                $project: {
+                    SCHOOL_YR_ID: "$_id",
+                    NR_ENROLLED: 1,
+                    _id: 0
+                }
+            }
+        ]).toArray();
+    }
+
+    async function yearIndexToActual(data){
         // Fetch the records and the year mappings (map the ID to the actual year
-        let [rows, yearMapping] = await Promise.all([
-            aaeCol.find(filter, {
-                projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1, REGION_CD: 1}
-            })  // only get these attributes of the object
-                .sort({SCHOOL_YR_ID: 1})  // sort the list to be in order of year
-                .toArray(),
-            schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
-        ]);
+        let yearMapping = await schoolYearCol.find({}).toArray();  // Get the objects from SCHOOL_YEAR
 
         // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
         // This creates an array where index is ID and value is the actual year
         const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-        //console.log("yearLookup[1]: "+ yearLookup[1]);
 
-        rows = rows.filter(e => e.NR_ENROLLED !== null)
-            .map((current) => {
+        data = data.map((current) => {
                 const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-
                 return {
                     SCHOOL_YR_ID: actualYear,
                     NR_ENROLLED: current.NR_ENROLLED
                 };
-            })
-        //console.log(rows);
-        return rows
+        })
+        return data
     }
+
 
     app.post("/api/chooseDisplaySchool", requireAuth, async (req, res) => {
 
         const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
+        const GENDER = "U"
         let filter = {SCHOOL_ID, GENDER};
-        const data = await getSchoolEnrollmentData(filter)
-
+        let data = await getSchoolEnrollmentData(filter)
+        data = await yearIndexToActual(data)
         res.json(data)
 
     })
@@ -481,17 +485,28 @@ async function run() {
         console.log("regionKeys: " + regionKeys)
         let REGION_CD = req.body.displayRegion
         let data
+        const GENDER = "U"
+        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+
         for (const key of regionKeys) {
             const index = regionKeys.indexOf(key);
             const SCHOOL_ID = key;
-            let filter = {SCHOOL_ID};
+            let filter = {SCHOOL_ID, GENDER};
             data = await getSchoolEnrollmentData(filter);
-            console.log(data)
+            //console.log(data)
             // add to accumulators to get averages
-
+            for (const d of data){
+                yearAccs[0][d.SCHOOL_YR_ID] += d.NR_ENROLLED
+                yearAccs[1][d.SCHOOL_YR_ID] += 1
+            }
         }
-
-        res.json(data)
+        let avgArray = Array(34)
+        for (let i = 1; i < avgArray.length; i++){
+            avgArray[i] = {SCHOOL_YR_ID: i, NR_ENROLLED: yearAccs[0][i]/yearAccs[1][i]}
+        }
+        avgArray = await yearIndexToActual(avgArray)
+        avgArray = avgArray.slice(1, 34)
+        res.json(avgArray)
 
     })
 

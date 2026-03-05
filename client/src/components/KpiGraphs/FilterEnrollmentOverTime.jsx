@@ -21,31 +21,46 @@ export default function FilterEnrollmentOverTimeChart({
                     displaySchoolId: Number(displaySchoolId),
                     displayRegion: displayRegion}
                 const res = await chooseFilterRegion(payload);
+                const res2 = await chooseDisplaySchool(payload);
+
 
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
+                    const labels = res.map((row) => row.SCHOOL_YR_ID)
+                    // Build a lookup for the second dataset
+                    const map2 = Object.fromEntries(
+                        res2.map(r => [r.SCHOOL_YR_ID, r.NR_ENROLLED])
+                    );
+                    console.log(labels[0])
+                    // Align res2 to the labels from res
+                    const alignedRes2 = labels.map(year => map2[year] ?? null);
+                    console.log(alignedRes2)
 
                     new Chart(document.getElementById(canvasId), {
                         type: "bar",
                         data: {
-                            labels: res.map((row) => row.SCHOOL_YR_ID),
+                            labels,
                             datasets: [
                                 {
-                                    label: "Enrollment by year",
+                                    label: `Enrollment by year in region ${selectedRegion}`,
                                     data: res.map((row) => row.NR_ENROLLED),
+                                },
+                                {
+                                    label: `Enrollment by year for school ${selectedSchoolId}`,
+                                    data: alignedRes2
                                 },
                             ],
                         },
                     });
                 }
-            } catch (err) {
-                console.error("Line chart failed:", err);
-            }
+             } catch (err) {
+                 console.error("Line chart failed:", err);
+             }
         }
 
         updateFilterEnrollmentOverTime();
-    }, [displaySchoolId, canvasId]);
+    }, [canvasId, displayRegion, selectedSchoolId]);
 
     return (
             <div>
