@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
 import SpeechRecognition, {useSpeechRecognition} from "react-speech-recognition";
@@ -82,9 +82,7 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     const {
         transcript,
-        listening,
         resetTranscript,
-        browserSupportsSpeechRecognition
     } = useSpeechRecognition();
 
     const startVoice = () => SpeechRecognition.startListening({continuous: true, language: "en-US"});
@@ -119,7 +117,29 @@ export default function AnnualFormPage({ username, onLogout }) {
         if (text === "hello") {
             setNotify("pass");
             resetTranscript();
+            return;
         }
+        const m = text.match(/^set mail inquiries to (\d+)$/);
+        if (m) {
+            const value = m[1];
+            setAaeGrid((prev) => ({
+                ...prev,
+                INQUIRIES: {...prev.INQUIRIES, M: value}
+            }));
+            setNotify(`Set inquiries male to ${value}`);
+            resetTranscript();
+        }
+        const f = text.match(/^set female inquiries to (\d+)$/);
+        if (f) {
+            const value = f[1];
+            setAaeGrid((prev) => ({
+                ...prev,
+                INQUIRIES: {...prev.INQUIRIES, F: value}
+            }));
+            setNotify(`Set inquiries female to ${value}`);
+            resetTranscript();
+        }
+
     }, [transcript, resetTranscript]);
 
     // load annual data
@@ -533,6 +553,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                                     Clear
                                 </button>
                             </div>
+                            <div className="small text-muted mb-2">Transcript: {transcript}</div>
                             {notify && <div className="alert alert-info py-2">{notify}</div>}
 
                             <div className="card">
