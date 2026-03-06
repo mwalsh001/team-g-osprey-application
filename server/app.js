@@ -40,6 +40,10 @@ let usersCollection = null;
 let schoolCol, schoolYearCol, gradeDefsCol;
 let aaeCol, eaCol, easocCol;
 
+function getAttritionCollection(collectionName) {
+    return collectionName === "ENROLL_ATTRITION_SOC" ? easocCol : eaCol;
+}
+
 async function run() {
     await dbconnect.connect().then(() => console.log("Connected!"));
     usersCollection = await dbconnect.db("osprey-data").collection("users");
@@ -762,6 +766,7 @@ async function run() {
         //console.log("regionKeys: " + regionKeys)
         let data
         const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+        const attritionCol = getAttritionCollection(req.body.attritionCollection);
 
         for (const key of regionKeys) {
             //const index = regionKeys.indexOf(key);
@@ -912,6 +917,58 @@ async function run() {
 
     })
 
+    app.post("/api/attritionRatesYearly", requireAuth, async (req, res) => {
+        const SCHOOL_ID = req.body.displaySchoolId;
+        const attritionCol = getAttritionCollection(req.body.attritionCollection);
+
+        const yearMapping = await schoolYearCol
+            .find({})
+            .sort({ID: 1})
+            .toArray();
+
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+        const rows = [];
+
+        for (const year of yearMapping) {
+            const SCHOOL_YR_ID = year.ID;
+
+            const enrollment = await aaeCol.find({
+                SCHOOL_ID,
+                SCHOOL_YR_ID,
+                GENDER: "U"
+            }).toArray();
+
+            const totalEnrolled = enrollment.reduce((acc, obj) =>
+                acc + obj.NR_ENROLLED, 0);
+
+            if (totalEnrolled <= 0) continue;
+
+            const activity = await attritionCol.find({
+                SCHOOL_ID,
+                SCHOOL_YR_ID
+            }).toArray();
+
+            const totalAdded = activity.reduce((acc, obj) =>
+                acc + obj.STUDENTS_ADDED_DURING_YEAR, 0);
+
+            const totalLeft = activity.reduce((acc, obj) =>
+                acc + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN, 0);
+
+            const startingPop = totalEnrolled + totalAdded;
+
+            if (startingPop <= 0) continue;
+
+            const attritionRate = (totalLeft / startingPop) * 100;
+
+            rows.push({
+                SCHOOL_YR_ID: yearLookup[SCHOOL_YR_ID] || "Unknown Year",
+                attritionRate: Number(attritionRate.toFixed(2))
+            });
+        }
+
+        res.json(rows);
+    })
+
     app.post("/api/chooseDisplayYear", requireAuth, async (req, res) => {
         const SCHOOL_ID = req.body.displaySchoolId;
         const SCHOOL_YR_ID = req.body.displaySchoolYear;
@@ -1008,6 +1065,7 @@ async function run() {
     app.post("/api/attritionYear", requireAuth, async (req, res) => {
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
+        const attritionCol = getAttritionCollection(req.body.attritionCollection);
 
         const enrollment = await aaeCol.find({
             SCHOOL_ID: schoolId,
@@ -1019,7 +1077,7 @@ async function run() {
             return accumulator + obj.NR_ENROLLED;
         }, 0);
 
-        const activity = await eaCol.find({
+        const activity = await attritionCol.find({
             SCHOOL_ID: schoolId,
             SCHOOL_YR_ID: schoolYear
         }).toArray();

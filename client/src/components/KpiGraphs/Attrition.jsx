@@ -8,6 +8,7 @@ export default function AttritionYOYChart({
                                               initialSchoolId = "",
                                               selectedSchoolId = "",
                                               selectedYearId = "",
+                                              attritionCollection = "ENROLL_ATTRITION",
                                           }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
@@ -37,6 +38,7 @@ export default function AttritionYOYChart({
                 const res = await getAttritionRate({
                     displaySchoolId: Number(displaySchoolId),
                     displaySchoolYear: Number(displaySchoolYear),
+                    attritionCollection,
                 });
                 if (res) {
                     setAttritionRate(res.attritionRate);
@@ -72,13 +74,16 @@ export default function AttritionYOYChart({
             }
         }
         updateAttrition();
-    }, [displaySchoolId, displaySchoolYear]);
+    }, [displaySchoolId, displaySchoolYear, attritionCollection]);
 
     useEffect(() => {
         async function updateAttritionYOY() {
             if (!displaySchoolId) return;
             try {
-                const res = await attritionYOY({ displaySchoolId: Number(displaySchoolId) });
+                const res = await attritionYOY({
+                    displaySchoolId: Number(displaySchoolId),
+                    attritionCollection,
+                });
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
@@ -123,7 +128,7 @@ export default function AttritionYOYChart({
             }
         }
         updateAttritionYOY();
-    }, [displaySchoolId, canvasId]);
+    }, [displaySchoolId, canvasId, attritionCollection]);
 
     return (
         <div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { retentionYOY, getRetention } from "../../api/annualBenchmarkingApi.js";
+import { retentionYOY, getRetention, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
 
 
 export default function RetentionYOYChart ({
@@ -9,6 +9,8 @@ export default function RetentionYOYChart ({
                                                initialSchoolId = "",
                                                selectedSchoolId = "",
                                                selectedYearId = "",
+                                               deriveFromAttrition = false,
+                                               attritionCollection = "ENROLL_ATTRITION",
                                            }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
@@ -32,6 +34,18 @@ export default function RetentionYOYChart ({
         async function updateRetention() {
             if (!displaySchoolId || !displaySchoolYear) return;
             try {
+                if (deriveFromAttrition) {
+                    const res = await getAttritionRate({
+                        displaySchoolId: Number(displaySchoolId),
+                        displaySchoolYear: Number(displaySchoolYear),
+                        attritionCollection,
+                    });
+                    if (res && typeof res.attritionRate === "number") {
+                        setRetentionRate(Number((100 - res.attritionRate).toFixed(2)));
+                    }
+                    return;
+                }
+
                 const res = await getRetention({
                     displaySchoolId: Number(displaySchoolId),
                     displaySchoolYear: Number(displaySchoolYear),
@@ -42,11 +56,12 @@ export default function RetentionYOYChart ({
             }
         }
         updateRetention();
-    }, [displaySchoolId, displaySchoolYear]);
+    }, [displaySchoolId, displaySchoolYear, deriveFromAttrition, attritionCollection]);
 
     useEffect(() => {
         async function updateRetentionYOY() {
             if (!displaySchoolId) return;
+            if (deriveFromAttrition) return;
             try {
                 const res = await retentionYOY({ displaySchoolId: Number(displaySchoolId) });
                 if (res) {
@@ -93,7 +108,7 @@ export default function RetentionYOYChart ({
             }
         }
         updateRetentionYOY();
-    }, [displaySchoolId, canvasId]);
+    }, [displaySchoolId, canvasId, deriveFromAttrition]);
 
     return (
         <div className="d-flex flex-column gap-3">
