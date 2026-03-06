@@ -1,6 +1,6 @@
-import { NavLink } from "react-router-dom";
+import {NavLink} from "react-router-dom";
 
-export default function Sidebar({ collapsed, onToggle }) {
+export default function Sidebar({collapsed, onToggle}) {
     const width = collapsed ? "72px" : "200px";
     const userRole = localStorage.getItem("role");
     const isAdmin = userRole === "admin";

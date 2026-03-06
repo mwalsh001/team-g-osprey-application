@@ -1,15 +1,15 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { retentionYOY, getRetention } from "../../api/annualBenchmarkingApi.js";
+import {retentionYOY, getRetention} from "../../api/annualBenchmarkingApi.js";
 
 
-export default function RetentionYOYChart ({
-                                               years = [],
-                                               canvasId = "retentionYOY",
-                                               initialSchoolId = "",
-                                               selectedSchoolId = "",
-                                               selectedYearId = "",
-                                           }) {
+export default function RetentionYOYChart({
+                                              years = [],
+                                              canvasId = "retentionYOY",
+                                              initialSchoolId = "",
+                                              selectedSchoolId = "",
+                                              selectedYearId = "",
+                                          }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [retentionRate, setRetentionRate] = useState(null);
@@ -38,6 +38,7 @@ export default function RetentionYOYChart ({
                 console.error("Retention rate failed:", err);
             }
         }
+
         updateRetention();
     }, [displaySchoolId, displaySchoolYear]);
 
@@ -45,7 +46,7 @@ export default function RetentionYOYChart ({
         async function updateRetentionYOY() {
             if (!displaySchoolId) return;
             try {
-                const res = await retentionYOY({ displaySchoolId: Number(displaySchoolId) });
+                const res = await retentionYOY({displaySchoolId: Number(displaySchoolId)});
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
@@ -62,7 +63,7 @@ export default function RetentionYOYChart ({
                             plugins: {
                                 tooltip: {
                                     callbacks: {
-                                        label: function(context) {
+                                        label: function (context) {
                                             let label = context.dataset.label || "";
                                             if (label) label += ": ";
                                             if (context.parsed.y !== null) {
@@ -76,7 +77,7 @@ export default function RetentionYOYChart ({
                             scales: {
                                 y: {
                                     ticks: {
-                                        callback: function(value) {
+                                        callback: function (value) {
                                             return value + "%";
                                         }
                                     }
@@ -89,6 +90,7 @@ export default function RetentionYOYChart ({
                 console.error("Retention YOY chart failed:", err);
             }
         }
+
         updateRetentionYOY();
     }, [displaySchoolId, canvasId]);
 

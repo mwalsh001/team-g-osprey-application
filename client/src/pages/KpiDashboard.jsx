@@ -1,7 +1,7 @@
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
-import { useEffect, useState } from "react";
-import { getSchools, getSchoolYears } from "../api/annualBenchmarkingApi.js";
+import {useEffect, useState} from "react";
+import {getSchools, getSchoolYears} from "../api/annualBenchmarkingApi.js";
 
 import EnrollmentOverTimeChart from "../components/KpiGraphs/EnrollmentOverTime.jsx";
 import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.jsx";
@@ -11,7 +11,7 @@ import InquiriesYOYChart from "../components/KpiGraphs/Inquiries.jsx";
 import InquiriesByGenderChart from "../components/KpiGraphs/InquiriesByGender.jsx";
 import CombinedYOYChart from "../components/KpiGraphs/CombinedYoY.jsx";
 
-export default function KpiDashboard({ username, onLogout }) {
+export default function KpiDashboard({username, onLogout}) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
@@ -35,17 +35,18 @@ export default function KpiDashboard({ username, onLogout }) {
                 onLogout?.();
             }
         }
+
         void load();
     }, [onLogout]);
 
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName} />
+            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName}/>
 
             <div className="container-fluid">
                 <div className="row">
                     <div className="col-auto p-0">
-                        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)} />
+                        <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(v => !v)}/>
                     </div>
 
                     <div className="col">
@@ -85,13 +86,20 @@ export default function KpiDashboard({ username, onLogout }) {
                             </div>
 
                             <div className="row g-4">
-                                <EnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId} canvasId="enrollmentRate"/>
-                                <EnrollmentByGenderChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="enrollmentByGender"/>
-                                <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="retentionYOY"/>
-                                <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="attritionYOY"/>
-                                <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY" />
-                                <InquiriesYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesYOY"/>
-                                <InquiriesByGenderChart selectedSchoolId={selectedSchoolId} selectedYearId={selectedYearId} canvasId="inquiriesByGender"/>
+                                <EnrollmentOverTimeChart schools={schools} selectedSchoolId={selectedSchoolId}
+                                                         canvasId="enrollmentRate"/>
+                                <EnrollmentByGenderChart schools={schools} years={years}
+                                                         selectedSchoolId={selectedSchoolId}
+                                                         selectedYearId={selectedYearId} canvasId="enrollmentByGender"/>
+                                <RetentionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId}
+                                                   selectedYearId={selectedYearId} canvasId="retentionYOY"/>
+                                <AttritionYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId}
+                                                   selectedYearId={selectedYearId} canvasId="attritionYOY"/>
+                                <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="combinedYOY"/>
+                                <InquiriesYOYChart schools={schools} years={years} selectedSchoolId={selectedSchoolId}
+                                                   selectedYearId={selectedYearId} canvasId="inquiriesYOY"/>
+                                <InquiriesByGenderChart selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId} canvasId="inquiriesByGender"/>
                             </div>
                         </div>
                     </div>

@@ -3,7 +3,7 @@ import Sidebar from "../components/SideBar.jsx";
 import {useState} from "react";
 import {createSchoolAccount} from "../api/loginApi";
 
-export default function EditUsersPage ({ username, onLogout }) {
+export default function EditUsersPage({username, onLogout}) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const role = localStorage.getItem("role");
     const schoolName = localStorage.getItem("schoolName");
@@ -84,8 +84,8 @@ export default function EditUsersPage ({ username, onLogout }) {
                                         </div>
                                     </div>
                                 </form>
-                                ) : (
-                                    <div className="alert alert-warning">Unauthorized.</div>
+                            ) : (
+                                <div className="alert alert-warning">Unauthorized.</div>
                             )}
 
                         </div>

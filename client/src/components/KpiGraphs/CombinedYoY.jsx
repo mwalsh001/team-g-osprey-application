@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { retentionYOY, attritionYOY } from "../../api/annualBenchmarkingApi.js";
+import {retentionYOY, attritionYOY} from "../../api/annualBenchmarkingApi.js";
 
 export default function CombinedYOYChart({
                                              canvasId = "combinedYOY",
@@ -13,7 +13,7 @@ export default function CombinedYOYChart({
         async function updateCombinedYOY() {
             if (!displaySchoolId) return;
             try {
-                const payload = { displaySchoolId: Number(displaySchoolId) };
+                const payload = {displaySchoolId: Number(displaySchoolId)};
                 const [retentionRes, attritionRes] = await Promise.all([
                     retentionYOY(payload),
                     attritionYOY(payload),
@@ -40,7 +40,7 @@ export default function CombinedYOYChart({
                         plugins: {
                             tooltip: {
                                 callbacks: {
-                                    label: function(context) {
+                                    label: function (context) {
                                         let label = context.dataset.label || "";
                                         if (label) label += ": ";
                                         if (context.parsed.y !== null) {
@@ -54,7 +54,7 @@ export default function CombinedYOYChart({
                         scales: {
                             y: {
                                 ticks: {
-                                    callback: function(value) {
+                                    callback: function (value) {
                                         return value + "%";
                                     }
                                 }
@@ -66,6 +66,7 @@ export default function CombinedYOYChart({
                 console.error("Combined YOY chart failed:", err);
             }
         }
+
         updateCombinedYOY();
     }, [displaySchoolId, canvasId]);
 

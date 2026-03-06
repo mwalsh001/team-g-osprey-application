@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import {useEffect, useState} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { attritionYOY, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
+import {attritionYOY, getAttritionRate} from "../../api/annualBenchmarkingApi.js";
 
 export default function AttritionYOYChart({
                                               years = [],
@@ -40,6 +40,7 @@ export default function AttritionYOYChart({
                 console.error("Attrition rate failed:", err);
             }
         }
+
         updateAttrition();
     }, [displaySchoolId, displaySchoolYear]);
 
@@ -47,7 +48,7 @@ export default function AttritionYOYChart({
         async function updateAttritionYOY() {
             if (!displaySchoolId) return;
             try {
-                const res = await attritionYOY({ displaySchoolId: Number(displaySchoolId) });
+                const res = await attritionYOY({displaySchoolId: Number(displaySchoolId)});
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
@@ -64,7 +65,7 @@ export default function AttritionYOYChart({
                             plugins: {
                                 tooltip: {
                                     callbacks: {
-                                        label: function(context) {
+                                        label: function (context) {
                                             let label = context.dataset.label || "";
                                             if (label) label += ": ";
                                             if (context.parsed.y !== null) {
@@ -78,7 +79,7 @@ export default function AttritionYOYChart({
                             scales: {
                                 y: {
                                     ticks: {
-                                        callback: function(value) {
+                                        callback: function (value) {
                                             return value + "%";
                                         }
                                     }
@@ -91,6 +92,7 @@ export default function AttritionYOYChart({
                 console.error("Attrition YOY chart failed:", err);
             }
         }
+
         updateAttritionYOY();
     }, [displaySchoolId, canvasId]);
 

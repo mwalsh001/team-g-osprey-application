@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { chooseDisplaySchool } from "../../api/annualBenchmarkingApi.js";
+import {chooseDisplaySchool} from "../../api/annualBenchmarkingApi.js";
 
 export default function EnrollmentOverTimeChart({
                                                     canvasId = "enrollmentRate",
@@ -14,7 +14,7 @@ export default function EnrollmentOverTimeChart({
             if (!displaySchoolId) return;
 
             try {
-                const payload = { displaySchoolId: Number(displaySchoolId) };
+                const payload = {displaySchoolId: Number(displaySchoolId)};
                 const res = await chooseDisplaySchool(payload);
 
                 if (res) {

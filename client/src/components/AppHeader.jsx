@@ -1,4 +1,4 @@
-export default function AppHeader({ username, onLogout, schoolName }) {
+export default function AppHeader({username, onLogout, schoolName}) {
     const userRole = localStorage.getItem("role");
     const userSchoolName = schoolName || localStorage.getItem("schoolName");
     const isAdmin = userRole === "admin";

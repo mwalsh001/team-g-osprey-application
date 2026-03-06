@@ -20,7 +20,7 @@ import {
 } from "../api/annualBenchmarkingApi.js";
 
 // Helpers
-export default function AnnualFormPage({ username, onLogout }) {
+export default function AnnualFormPage({username, onLogout}) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
@@ -108,6 +108,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                 }, 1000);
             }
         }
+
         void loadLookups();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -150,11 +151,11 @@ export default function AnnualFormPage({ username, onLogout }) {
             try {
                 setNotify("");
 
-            const [aae, attr, attrSoc] = await Promise.all([
-                getAAE({ schoolId, schoolYearId }),
-                getAttrition({ schoolId, schoolYearId, gradeId }),
-                getAttritionSoc({ schoolId, schoolYearId, gradeId }),
-            ]);
+                const [aae, attr, attrSoc] = await Promise.all([
+                    getAAE({schoolId, schoolYearId}),
+                    getAttrition({schoolId, schoolYearId, gradeId}),
+                    getAttritionSoc({schoolId, schoolYearId, gradeId}),
+                ]);
 
                 setAaeRows(aae);
                 setAttrRows(attr);
@@ -254,7 +255,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                 }
             }
 
-            const refreshed = await getAAE({ schoolId, schoolYearId });
+            const refreshed = await getAAE({schoolId, schoolYearId});
             setAaeRows(refreshed);
 
             setNotify("Saved Admissions: Enrollment section.");
@@ -263,14 +264,14 @@ export default function AnnualFormPage({ username, onLogout }) {
         }
     }
 
-    async function saveAttritionSection({ soc }) {
+    async function saveAttritionSection({soc}) {
         if (!schoolId || !schoolYearId) return;
 
         const form = soc ? attrSocForm : attrForm;
         const payload = {
             schoolId: Number(schoolId),
             schoolYearId: Number(schoolYearId),
-            ...(gradeId ? { GRADE_DEF_ID: Number(gradeId) } : {}),
+            ...(gradeId ? {GRADE_DEF_ID: Number(gradeId)} : {}),
             STUDENTS_ADDED_DURING_YEAR: Number(form.STUDENTS_ADDED_DURING_YEAR),
             STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUATED ?? form.STUDENTS_GRADUATED), // safety
             EXCH_STUD_REPTS: Number(form.EXCH_STUD_REPTS),
@@ -287,8 +288,8 @@ export default function AnnualFormPage({ username, onLogout }) {
 
             if (first) {
                 const updated = soc
-                    ? await editAttritionSoc({ ...payload, mongoId: first.mongoId })
-                    : await editAttrition({ ...payload, mongoId: first.mongoId });
+                    ? await editAttritionSoc({...payload, mongoId: first.mongoId})
+                    : await editAttrition({...payload, mongoId: first.mongoId});
 
                 soc ? setAttrSocRows(updated) : setAttrRows(updated);
             } else {
@@ -467,7 +468,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     </table>
                 </div>
 
-                <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                <div style={{marginTop: "1rem", display: "flex", gap: "0.5rem"}}>
                     <button
                         type="button"
                         className="btn btn-success"
@@ -480,11 +481,11 @@ export default function AnnualFormPage({ username, onLogout }) {
         );
     }
 
-    function AttritionForm({ title, form, setForm, onSave }) {
+    function AttritionForm({title, form, setForm, onSave}) {
         const field = (name, label) => {
             return (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                    <label style={{ fontWeight: 600 }}>{label}</label>
+                <div style={{display: "flex", flexDirection: "column", gap: "0.25rem"}}>
+                    <label style={{fontWeight: 600}}>{label}</label>
                     <input
                         type="text"
                         inputMode="numeric"
@@ -492,10 +493,10 @@ export default function AnnualFormPage({ username, onLogout }) {
                         onChange={(e) => {
                             const next = e.target.value;
                             if (next === "" || /^\d+$/.test(next)) {
-                                setForm((prev) => ({ ...prev, [name]: next }));
+                                setForm((prev) => ({...prev, [name]: next}));
                             }
                         }}
-                        style={{ width: "240px", border: "1px solid #ccc" }}
+                        style={{width: "240px", border: "1px solid #ccc"}}
                     />
                 </div>
             );
@@ -503,8 +504,8 @@ export default function AnnualFormPage({ username, onLogout }) {
 
         return (
             <div>
-                <h3 style={{ marginTop: 0 }}>{title}</h3>
-                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                <h3 style={{marginTop: 0}}>{title}</h3>
+                <div style={{display: "flex", gap: "1.5rem", flexWrap: "wrap"}}>
                     {field("STUDENTS_ADDED_DURING_YEAR", "Students added during year")}
                     {field("STUDENTS_GRADUATED", "Students graduated")}
                     {field("EXCH_STUD_REPTS", "Exchange student reports")}
@@ -513,11 +514,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                     {field("STUD_NOT_RETURN", "Not returning")}
                 </div>
 
-                <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                <div style={{marginTop: "1rem", display: "flex", gap: "0.5rem"}}>
                     <button type="button"
                             className="btn btn-success"
                             onClick={onSave}
-                            >
+                    >
                         Submit Section
                     </button>
                 </div>
@@ -527,7 +528,7 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName} />
+            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName}/>
             <div className="container-fluid p-0">
                 <div className="d-flex" style={{minHeight: "100vh"}}>
                     <div style={{flex: "0 0 auto"}}>

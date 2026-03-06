@@ -75,8 +75,8 @@ async function run() {
 
     app.get("/api/schools", requireAuth, async (req, res) => {
         const rows = await schoolCol
-            .find({}, { projection: { ID: 1, NAME_TX: 1, REGION_CD: 1 } })
-            .sort({ ID: 1 })
+            .find({}, {projection: {ID: 1, NAME_TX: 1, REGION_CD: 1}})
+            .sort({ID: 1})
             .toArray();
 
         res.json(rows.map(s => ({
@@ -88,8 +88,8 @@ async function run() {
 
     app.get("/api/schoolYears", requireAuth, async (req, res) => {
         const rows = await schoolYearCol
-            .find({}, { projection: { ID: 1, SCHOOL_YEAR: 1 } })
-            .sort({ ID: 1 })
+            .find({}, {projection: {ID: 1, SCHOOL_YEAR: 1}})
+            .sort({ID: 1})
             .toArray();
 
         res.json(rows.map(y => ({
@@ -100,8 +100,8 @@ async function run() {
 
     app.get("/api/grades", requireAuth, async (req, res) => {
         const rows = await gradeDefsCol
-            .find({}, { projection: { ID: 1, NAME_TX: 1, DESCRIPTION_TX: 1, ORDER_NO: 1 } })
-            .sort({ ORDER_NO: 1 })
+            .find({}, {projection: {ID: 1, NAME_TX: 1, DESCRIPTION_TX: 1, ORDER_NO: 1}})
+            .sort({ORDER_NO: 1})
             .toArray();
 
         res.json(rows.map(g => ({
@@ -112,12 +112,12 @@ async function run() {
     });
 
     app.get("/api/aae", requireAuth, async (req, res) => {
-        const { schoolId, schoolYearId } = req.query;
+        const {schoolId, schoolYearId} = req.query;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const rows = await aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
+        const rows = await aaeCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
 
         res.json(rows.map(r => ({
             mongoId: r._id.toString(),
@@ -126,12 +126,12 @@ async function run() {
     });
 
     app.post("/api/aae", requireAuth, async (req, res) => {
-        const { schoolId, schoolYearId, ENROLLMENT_TYPE_CD, GENDER, NR_ENROLLED } = req.body;
+        const {schoolId, schoolYearId, ENROLLMENT_TYPE_CD, GENDER, NR_ENROLLED} = req.body;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const max = await aaeCol.find().sort({ ID: -1 }).limit(1).toArray();
+        const max = await aaeCol.find().sort({ID: -1}).limit(1).toArray();
         const nextId = (max[0]?.ID ?? 0) + 1;
 
         await aaeCol.insertOne({
@@ -143,48 +143,48 @@ async function run() {
             NR_ENROLLED: Number(NR_ENROLLED)
         });
 
-        const rows = await aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await aaeCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
 
     app.post("/api/aae/edit", requireAuth, async (req, res) => {
-        const { mongoId, schoolId, schoolYearId, ENROLLMENT_TYPE_CD, GENDER, NR_ENROLLED } = req.body;
+        const {mongoId, schoolId, schoolYearId, ENROLLMENT_TYPE_CD, GENDER, NR_ENROLLED} = req.body;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
         await aaeCol.updateOne(
-            { _id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID },
-            { $set: { ENROLLMENT_TYPE_CD, GENDER, NR_ENROLLED: Number(NR_ENROLLED) } }
+            {_id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID},
+            {$set: {ENROLLMENT_TYPE_CD, GENDER, NR_ENROLLED: Number(NR_ENROLLED)}}
         );
 
-        const rows = await aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await aaeCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
     app.post("/api/aae/delete", requireAuth, async (req, res) => {
-        const { mongoId, schoolId, schoolYearId } = req.body;
+        const {mongoId, schoolId, schoolYearId} = req.body;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        await aaeCol.deleteOne({ _id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID });
+        await aaeCol.deleteOne({_id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID});
 
-        const rows = await aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await aaeCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
 
 // ENROLL_ATTRITION
 
     app.get("/api/attrition", requireAuth, async (req, res) => {
-        const { schoolId, schoolYearId, gradeId } = req.query;
+        const {schoolId, schoolYearId, gradeId} = req.query;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const filter = { SCHOOL_ID, SCHOOL_YR_ID };
+        const filter = {SCHOOL_ID, SCHOOL_YR_ID};
         if (gradeId !== undefined && gradeId !== null && gradeId !== "") {
             filter.GRADE_DEF_ID = Number(gradeId);
         }
@@ -213,7 +213,7 @@ async function run() {
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const max = await eaCol.find().sort({ ID: -1 }).limit(1).toArray();
+        const max = await eaCol.find().sort({ID: -1}).limit(1).toArray();
         const nextId = (max[0]?.ID ?? 0) + 1;
 
         const doc = {
@@ -222,7 +222,7 @@ async function run() {
             SCHOOL_YR_ID,
 
             ...(GRADE_DEF_ID !== undefined && GRADE_DEF_ID !== null && GRADE_DEF_ID !== ""
-                ? { GRADE_DEF_ID: Number(GRADE_DEF_ID) }
+                ? {GRADE_DEF_ID: Number(GRADE_DEF_ID)}
                 : {}),
 
             STUDENTS_ADDED_DURING_YEAR: Number(STUDENTS_ADDED_DURING_YEAR),
@@ -235,8 +235,8 @@ async function run() {
 
         await eaCol.insertOne(doc);
 
-        const rows = await eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await eaCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
     app.post("/api/attrition/edit", requireAuth, async (req, res) => {
@@ -270,36 +270,36 @@ async function run() {
         }
 
         await eaCol.updateOne(
-            { _id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID },
-            { $set }
+            {_id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID},
+            {$set}
         );
 
-        const rows = await eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await eaCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
     app.post("/api/attrition/delete", requireAuth, async (req, res) => {
-        const { mongoId, schoolId, schoolYearId } = req.body;
+        const {mongoId, schoolId, schoolYearId} = req.body;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        await eaCol.deleteOne({ _id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID });
+        await eaCol.deleteOne({_id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID});
 
-        const rows = await eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await eaCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
 
 // ENROLL_ATTRITION_SOC
 
     app.get("/api/attritionSoc", requireAuth, async (req, res) => {
-        const { schoolId, schoolYearId, gradeId } = req.query;
+        const {schoolId, schoolYearId, gradeId} = req.query;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const filter = { SCHOOL_ID, SCHOOL_YR_ID };
+        const filter = {SCHOOL_ID, SCHOOL_YR_ID};
         if (gradeId !== undefined && gradeId !== null && gradeId !== "") {
             filter.GRADE_DEF_ID = Number(gradeId);
         }
@@ -328,7 +328,7 @@ async function run() {
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        const max = await easocCol.find().sort({ ID: -1 }).limit(1).toArray();
+        const max = await easocCol.find().sort({ID: -1}).limit(1).toArray();
         const nextId = (max[0]?.ID ?? 0) + 1;
 
         const doc = {
@@ -337,7 +337,7 @@ async function run() {
             SCHOOL_YR_ID,
 
             ...(GRADE_DEF_ID !== undefined && GRADE_DEF_ID !== null && GRADE_DEF_ID !== ""
-                ? { GRADE_DEF_ID: Number(GRADE_DEF_ID) }
+                ? {GRADE_DEF_ID: Number(GRADE_DEF_ID)}
                 : {}),
 
             STUDENTS_ADDED_DURING_YEAR: Number(STUDENTS_ADDED_DURING_YEAR),
@@ -350,8 +350,8 @@ async function run() {
 
         await easocCol.insertOne(doc);
 
-        const rows = await easocCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await easocCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
     app.post("/api/attritionSoc/edit", requireAuth, async (req, res) => {
@@ -385,38 +385,39 @@ async function run() {
         }
 
         await easocCol.updateOne(
-            { _id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID },
-            { $set }
+            {_id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID},
+            {$set}
         );
 
-        const rows = await easocCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await easocCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
     app.post("/api/attritionSoc/delete", requireAuth, async (req, res) => {
-        const { mongoId, schoolId, schoolYearId } = req.body;
+        const {mongoId, schoolId, schoolYearId} = req.body;
 
         const SCHOOL_ID = Number(schoolId);
         const SCHOOL_YR_ID = Number(schoolYearId);
 
-        await easocCol.deleteOne({ _id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID });
+        await easocCol.deleteOne({_id: new ObjectId(mongoId), SCHOOL_ID, SCHOOL_YR_ID});
 
-        const rows = await easocCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray();
-        res.json(rows.map(r => ({ mongoId: r._id.toString(), ...r })));
+        const rows = await easocCol.find({SCHOOL_ID, SCHOOL_YR_ID}).toArray();
+        res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
-    app.post("/api/chooseDisplaySchool", requireAuth, async(req, res) =>{
+    app.post("/api/chooseDisplaySchool", requireAuth, async (req, res) => {
         // console.log(req.query);
         // console.log(req.body);
         const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
         const GENDER = "U";
-        let filter = { SCHOOL_ID, GENDER };
+        let filter = {SCHOOL_ID, GENDER};
 
         // Fetch the records and the year mappings (map the ID to the actual year
         let [rows, yearMapping] = await Promise.all([
             aaeCol.find(filter, {
-                projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1 } })  // only get these attributes of the object
-                .sort({ SCHOOL_YR_ID: 1 })  // sort the list to be in order of year
+                projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1}
+            })  // only get these attributes of the object
+                .sort({SCHOOL_YR_ID: 1})  // sort the list to be in order of year
                 .toArray(),
             schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
         ]);
@@ -439,7 +440,7 @@ async function run() {
         res.json(rows);
     })
 
-    app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async(req, res) =>{
+    app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
 
         const SCHOOL_ID = req.body.displaySchoolId;
         const ENROLLMENT_TYPE_CD = "INQUIRIES";
@@ -447,8 +448,8 @@ async function run() {
 
         // Fetch the records and the year mappings (map the ID to the actual year
         const [rows, yearMapping] = await Promise.all([
-            aaeCol.find({ SCHOOL_ID, ENROLLMENT_TYPE_CD, GENDER })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
-                .sort({ SCHOOL_YR_ID: 1 })
+            aaeCol.find({SCHOOL_ID, ENROLLMENT_TYPE_CD, GENDER})  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
+                .sort({SCHOOL_YR_ID: 1})
                 .toArray(),
             schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
         ]);
@@ -496,12 +497,12 @@ async function run() {
         res.json(report);
     })
 
-    app.post("/api/retentionYOY", requireAuth, async(req, res) =>{
+    app.post("/api/retentionYOY", requireAuth, async (req, res) => {
         const SCHOOL_ID = req.body.displaySchoolId;
 
         const yearMapping = await schoolYearCol
             .find({})
-            .sort({ ID: 1 })
+            .sort({ID: 1})
             .toArray();
 
         const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
@@ -509,7 +510,7 @@ async function run() {
         const rows = [];
 
 
-        for (const year of yearMapping){
+        for (const year of yearMapping) {
             const SCHOOL_YR_ID = year.ID;
 
             const enrollment = await aaeCol.find({
@@ -539,7 +540,7 @@ async function run() {
 
             if (startingPop <= 0) continue;
 
-            let retentionRate =0;
+            let retentionRate = 0;
 
             if (startingPop > 0) {
                 retentionRate = (endingPop / startingPop) * 100;
@@ -585,12 +586,12 @@ async function run() {
 
     })
 
-    app.post("/api/attritionYOY", requireAuth, async(req, res) =>{
+    app.post("/api/attritionYOY", requireAuth, async (req, res) => {
         const SCHOOL_ID = req.body.displaySchoolId;
 
         const yearMapping = await schoolYearCol
             .find({})
-            .sort({ ID: 1 })
+            .sort({ID: 1})
             .toArray();
 
         const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
@@ -598,7 +599,7 @@ async function run() {
         const rows = [];
 
 
-        for (const year of yearMapping){
+        for (const year of yearMapping) {
             const SCHOOL_YR_ID = year.ID;
 
             const enrollment = await aaeCol.find({
@@ -627,7 +628,7 @@ async function run() {
 
             if (startingPop <= 0) continue;
 
-            let attritionRate =0;
+            let attritionRate = 0;
 
             if (startingPop > 0) {
                 attritionRate = (totalLeft / startingPop) * 100;
@@ -672,14 +673,14 @@ async function run() {
 
     })
 
-    app.post("/api/chooseDisplayYear", requireAuth, async(req, res) =>{
+    app.post("/api/chooseDisplayYear", requireAuth, async (req, res) => {
         const SCHOOL_ID = req.body.displaySchoolId;
         const SCHOOL_YR_ID = req.body.displaySchoolYear;
         let GENDER = "M";
-        let filter = { SCHOOL_ID, SCHOOL_YR_ID, GENDER };
+        let filter = {SCHOOL_ID, SCHOOL_YR_ID, GENDER};
 
         //do we want to include enrolled faculty children?
-        if(!req.body.includeFacultyChild){
+        if (!req.body.includeFacultyChild) {
             //if not, filter for INQUIRIES too
             filter.ENROLLMENT_TYPE_CD = "INQUIRIES"
         }
@@ -687,7 +688,8 @@ async function run() {
         // In database, there could be a value for INQUIRIES and FACULTYCHILD
         // aaeCol.find could return up to 2 objects
         let gender_m = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1}
+        })
             .toArray();
         //console.log(gender_m);
         // Get a single value for how many total males are enrolled
@@ -698,7 +700,8 @@ async function run() {
         // Repeat process for females and non-binary students
         filter.GENDER = "F"
         let gender_f = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1}
+        })
             .toArray();
         //console.log(gender_f);
         const val_f = gender_f.reduce((accumulator, obj) => {
@@ -707,7 +710,8 @@ async function run() {
 
         filter.GENDER = "NB"
         let gender_nb = await aaeCol.find(filter, {
-            projection: { SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1 } })
+            projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, GENDER: 1, NR_ENROLLED: 1}
+        })
             .toArray();
         //console.log(gender_nb);
         const val_nb = gender_nb.reduce((accumulator, obj) => {
@@ -720,7 +724,7 @@ async function run() {
         res.json(arr);
     })
 
-    app.post("/api/retention", requireAuth, async(req, res) =>{
+    app.post("/api/retention", requireAuth, async (req, res) => {
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
 
@@ -741,18 +745,18 @@ async function run() {
 
         const totalAdded = activity.reduce((accumulator, obj) => {
             return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
-        },0);
+        }, 0);
 
         const totalLeft = activity.reduce((accumulator, obj) => {
             return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
-        },0);
+        }, 0);
 
         const startingPop = totalEnrolled + totalAdded;
         const endingPop = startingPop - totalLeft;
 
-        let retentionRate =0;
+        let retentionRate = 0;
 
-        if (startingPop >0){
+        if (startingPop > 0) {
             retentionRate = (endingPop / startingPop) * 100;
         }
 
@@ -762,7 +766,7 @@ async function run() {
     })
 
     //CURRENT BUG: attrition percent undefined and most common reason not found
-    app.post("/api/attritionYear", requireAuth, async(req, res) =>{
+    app.post("/api/attritionYear", requireAuth, async (req, res) => {
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
 
@@ -783,31 +787,34 @@ async function run() {
 
         const totalAdded = activity.reduce((accumulator, obj) => {
             return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
-        },0);
+        }, 0);
 
         const totalLeft = activity.reduce((accumulator, obj) => {
             return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
-        },0);
+        }, 0);
 
         const startingPop = totalEnrolled + totalAdded;
 
-        let attritionRate =0;
+        let attritionRate = 0;
 
-        if (startingPop >0){
+        if (startingPop > 0) {
             attritionRate = (totalLeft / startingPop) * 100;
         }
 
         const reasons = [
-            { reason: "Dismissed or Withdrawn", value: activity.reduce((acc, obj) => acc + (obj.STUD_DISS_WTHD || 0), 0) },
-            { reason: "Not Invited Back", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_INV || 0), 0) },
-            { reason: "Did Not Return", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0) },
+            {
+                reason: "Dismissed or Withdrawn",
+                value: activity.reduce((acc, obj) => acc + (obj.STUD_DISS_WTHD || 0), 0)
+            },
+            {reason: "Not Invited Back", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_INV || 0), 0)},
+            {reason: "Did Not Return", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0)},
         ];
 
         const mostCommon = reasons.reduce((max, curr) => (curr.value > max.value ? curr : max));
 
         res.json({
             attritionRate: Number(attritionRate.toFixed(2)),
-            mostCommon : mostCommon.reason
+            mostCommon: mostCommon.reason
         });
 
 
