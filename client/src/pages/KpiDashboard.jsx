@@ -42,7 +42,7 @@ export default function KpiDashboard({ username, onLogout }) {
                     if (s?.length && !selectedSchoolId) setSelectedSchoolId(String(s[0].id));
                 }
                 setRegions(r);
-                if (s?.length && !selectedSchoolId) setSelectedSchoolId(String(s[0].id));
+
                 if (y?.length && !selectedYearId) setSelectedYearId(String(y[0].id));
                 if (r?.length && !selectedRegion) setSelectedRegion(String(r[0]));
             } catch (e) {
