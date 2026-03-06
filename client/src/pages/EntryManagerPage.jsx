@@ -1,7 +1,6 @@
 import {useEffect, useMemo, useState} from "react";
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
-import SpeechRecognition, {useSpeechRecognition} from "react-speech-recognition";
 
 import {
     addAAE,
@@ -80,15 +79,6 @@ export default function AnnualFormPage({username, onLogout}) {
         [grades, gradeId]
     );
 
-    const {
-        transcript,
-        finalTranscript,
-        resetTranscript,
-    } = useSpeechRecognition();
-
-    const startVoice = () => SpeechRecognition.startListening({continuous: true, language: "en-US"});
-    const stopVoice = () => SpeechRecognition.stopListening();
-
     // load lookups
     useEffect(() => {
         async function loadLookups() {
@@ -113,39 +103,8 @@ export default function AnnualFormPage({username, onLogout}) {
         void loadLookups();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    //voice test
-    useEffect(() => {
-        if (!finalTranscript) return;
-        const text = finalTranscript.trim().toLowerCase();
-        if (text === "hello") {
-            setNotify("pass");
-            resetTranscript();
-            return;
-        }
-        const m = text.match(/^set mail (inquiries|increase) to (\d+)$/) ||
-            text.match(/^set mail (inquiries|increase) to (\d+)$./);
-        if (m) {
-            const value = m[2];
-            setAaeGrid((prev) => ({
-                ...prev,
-                INQUIRIES: {...prev.INQUIRIES, M: value}
-            }));
-            setNotify(`Set inquiries male to ${value}`);
-            resetTranscript();
-        }
-        const f = text.match(/^set female (inquiries|increase) to (\d+)$/) ||
-            text.match(/^set female (inquiries|increase) to (\d+)$./);
-        if (f) {
-            const value = f[2];
-            setAaeGrid((prev) => ({
-                ...prev,
-                INQUIRIES: {...prev.INQUIRIES, F: value}
-            }));
-            setNotify(`Set inquiries female to ${value}`);
-            resetTranscript();
-        }
 
-    }, [finalTranscript, resetTranscript]);
+
 
     // load annual data
     useEffect(() => {
@@ -548,17 +507,6 @@ export default function AnnualFormPage({username, onLogout}) {
                             <AnnualSelectors/>
                             <SectionTabs/>
                             <div className="d-flex gap-2 mb-3">
-                                <button type="button" className="btn btn-outline-secondary" onClick={startVoice}>
-                                    Start Voice
-                                </button>
-                                <button type="button" className="btn btn-outline-secondary" onClick={stopVoice}>
-                                    Stop Voice
-                                </button>
-                                <button type="button" className="btn btn-outline-secondary" onClick={resetTranscript}>
-                                    Clear
-                                </button>
-                            </div>
-                            <div className="small text-muted mb-2">Transcript: {transcript}</div>
                             {notify && <div className="alert alert-info py-2">{notify}</div>}
 
                             <div className="card">
@@ -583,6 +531,7 @@ export default function AnnualFormPage({username, onLogout}) {
                                         />
                                     )}
                                 </div>
+                            </div>
                             </div>
                         </div>
                     </main>
