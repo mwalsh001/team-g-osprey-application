@@ -1,20 +1,25 @@
-import {useEffect, useState} from "react";
+import { useEffect, useState } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import {retentionYOY, getRetention} from "../../api/annualBenchmarkingApi.js";
+import { retentionYOY, getRetention, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
 
 
-export default function RetentionYOYChart({
-                                              years = [],
-                                              canvasId = "retentionYOY",
-                                              initialSchoolId = "",
-                                              selectedSchoolId = "",
-                                              selectedYearId = "",
-                                          }) {
+export default function RetentionYOYChart ({
+                                               years = [],
+                                               canvasId = "retentionYOY",
+                                               initialSchoolId = "",
+                                               selectedSchoolId = "",
+                                               selectedYearId = "",
+                                               deriveFromAttrition = false,
+                                               attritionCollection = "ENROLL_ATTRITION",
+                                           }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [retentionRate, setRetentionRate] = useState(null);
 
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
+    const displaySchoolYearLabel =
+        years?.find((y) => String(y.id) === String(displaySchoolYear))?.year ??
+        displaySchoolYear;
 
 
     useEffect(() => {
@@ -29,6 +34,18 @@ export default function RetentionYOYChart({
         async function updateRetention() {
             if (!displaySchoolId || !displaySchoolYear) return;
             try {
+                if (deriveFromAttrition) {
+                    const res = await getAttritionRate({
+                        displaySchoolId: Number(displaySchoolId),
+                        displaySchoolYear: Number(displaySchoolYear),
+                        attritionCollection,
+                    });
+                    if (res && typeof res.attritionRate === "number") {
+                        setRetentionRate(Number((100 - res.attritionRate).toFixed(2)));
+                    }
+                    return;
+                }
+
                 const res = await getRetention({
                     displaySchoolId: Number(displaySchoolId),
                     displaySchoolYear: Number(displaySchoolYear),
@@ -38,15 +55,15 @@ export default function RetentionYOYChart({
                 console.error("Retention rate failed:", err);
             }
         }
-
         updateRetention();
-    }, [displaySchoolId, displaySchoolYear]);
+    }, [displaySchoolId, displaySchoolYear, deriveFromAttrition, attritionCollection]);
 
     useEffect(() => {
         async function updateRetentionYOY() {
             if (!displaySchoolId) return;
+            if (deriveFromAttrition) return;
             try {
-                const res = await retentionYOY({displaySchoolId: Number(displaySchoolId)});
+                const res = await retentionYOY({ displaySchoolId: Number(displaySchoolId) });
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
@@ -63,7 +80,7 @@ export default function RetentionYOYChart({
                             plugins: {
                                 tooltip: {
                                     callbacks: {
-                                        label: function (context) {
+                                        label: function(context) {
                                             let label = context.dataset.label || "";
                                             if (label) label += ": ";
                                             if (context.parsed.y !== null) {
@@ -77,7 +94,7 @@ export default function RetentionYOYChart({
                             scales: {
                                 y: {
                                     ticks: {
-                                        callback: function (value) {
+                                        callback: function(value) {
                                             return value + "%";
                                         }
                                     }
@@ -90,17 +107,24 @@ export default function RetentionYOYChart({
                 console.error("Retention YOY chart failed:", err);
             }
         }
-
         updateRetentionYOY();
-    }, [displaySchoolId, canvasId]);
+    }, [displaySchoolId, canvasId, deriveFromAttrition]);
 
     return (
-        <div>
-            <div>
-                <p>Retention Rate</p>
-                {retentionRate !== null ? `${retentionRate}%` : "--"}
+        <div className="d-flex flex-column gap-3">
+            <div className="card shadow-sm text-center">
+                <div className="card-body">
+                    <h6 className="card-title text-muted mb-1">
+                        Retention Rate{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
+                    </h6>
+                    <div className="fs-4 fw-semibold">
+                        {retentionRate !== null ? `${retentionRate}%` : "--"}
+                    </div>
+                </div>
             </div>
-            <canvas id={canvasId}></canvas>
+
+
         </div>
+
     );
 }
