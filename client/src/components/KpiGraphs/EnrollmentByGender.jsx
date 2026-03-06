@@ -69,7 +69,7 @@ export default function EnrollmentByGenderChart({
                         : "Enrollment By Gender"}
             </h6>
 
-            <div className="d-flex justify-content-center">
+            <div className="d-flex justify-content-center flex-grow-1">
                 <div className="mx-auto" style={{ width: "85%", height: "260px" }}>
                     <canvas id={canvasId} className="d-block mx-auto"></canvas>
                 </div>
@@ -82,8 +82,8 @@ export default function EnrollmentByGenderChart({
     }
 
     return (
-        <div className="card shadow-sm">
-            <div className="card-body">
+        <div className="card shadow-sm h-100">
+            <div className="card-body d-flex flex-column h-100">
                 {content}
             </div>
         </div>

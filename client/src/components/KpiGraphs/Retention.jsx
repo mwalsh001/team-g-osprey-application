@@ -9,12 +9,15 @@ export default function RetentionYOYChart ({
                                                initialSchoolId = "",
                                                selectedSchoolId = "",
                                                selectedYearId = "",
-                                               deriveFromAttrition = false,
-                                               attritionCollection = "ENROLL_ATTRITION",
+                                                selectedRegion = "",
+                                                showRegionLabels = false,
+                                                deriveFromAttrition = false,
+                                                attritionCollection = "ENROLL_ATTRITION",
                                            }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [retentionRate, setRetentionRate] = useState(null);
+    const displayRegion = selectedRegion ||  "";
 
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displaySchoolYearLabel =
@@ -34,29 +37,41 @@ export default function RetentionYOYChart ({
         async function updateRetention() {
             if (!displaySchoolId || !displaySchoolYear) return;
             try {
+                const payload = {
+                    displaySchoolId: Number(displaySchoolId),
+                    displaySchoolYear: Number(displaySchoolYear)
+                }
+                if (showRegionLabels && displayRegion !== "") {
+                    payload.displayRegion = displayRegion
+                }
                 if (deriveFromAttrition) {
                     const res = await getAttritionRate({
-                        displaySchoolId: Number(displaySchoolId),
-                        displaySchoolYear: Number(displaySchoolYear),
+                        ...payload,
                         attritionCollection,
                     });
-                    if (res && typeof res.attritionRate === "number") {
-                        setRetentionRate(Number((100 - res.attritionRate).toFixed(2)));
+                    if (res?.attritionRate) {
+                        if (Array.isArray(res.attritionRate)) {
+                            setRetentionRate(res.attritionRate.map((value) =>
+                                typeof value === "number" ? Number((100 - value).toFixed(2)) : value
+                            ));
+                        } else if (typeof res.attritionRate === "number") {
+                            setRetentionRate(Number((100 - res.attritionRate).toFixed(2)));
+                        } else {
+                            setRetentionRate(null);
+                        }
+                    } else {
+                        setRetentionRate(null);
                     }
-                    return;
+                } else {
+                    const res = await getRetention(payload);
+                    if (res) setRetentionRate(res);
                 }
-
-                const res = await getRetention({
-                    displaySchoolId: Number(displaySchoolId),
-                    displaySchoolYear: Number(displaySchoolYear),
-                });
-                if (res) setRetentionRate(res.retentionRate);
             } catch (err) {
                 console.error("Retention rate failed:", err);
             }
         }
         updateRetention();
-    }, [displaySchoolId, displaySchoolYear, deriveFromAttrition, attritionCollection]);
+    }, [displaySchoolId, displaySchoolYear, displayRegion, showRegionLabels, deriveFromAttrition, attritionCollection]);
 
     useEffect(() => {
         async function updateRetentionYOY() {
@@ -110,6 +125,22 @@ export default function RetentionYOYChart ({
         updateRetentionYOY();
     }, [displaySchoolId, canvasId, deriveFromAttrition]);
 
+    const renderValue = (value) => {
+        if (value === null || value === undefined) return "--";
+        if (Array.isArray(value)) {
+            if (showRegionLabels) {
+                return (
+                    <>
+                        {value.length >= 1 && <div>My School: {value[0]}%</div>}
+                        {value.length >= 2 && <div>Schools in region {displayRegion}: {value[1]}%</div>}
+                    </>
+                );
+            }
+            return value.length >= 1 ? `${value[0]}%` : "--";
+        }
+        return `${value}%`;
+    };
+
     return (
         <div className="d-flex flex-column gap-3">
             <div className="card shadow-sm text-center">
@@ -118,7 +149,7 @@ export default function RetentionYOYChart ({
                         Retention Rate{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                     </h6>
                     <div className="fs-4 fw-semibold">
-                        {retentionRate !== null ? `${retentionRate}%` : "--"}
+                        {renderValue(retentionRate)}
                     </div>
                 </div>
             </div>
