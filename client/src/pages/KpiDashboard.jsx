@@ -7,7 +7,6 @@ import EnrollmentOverTimeChart from "../components/KpiGraphs/EnrollmentOverTime.
 import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.jsx";
 import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
 import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
-import AttritionSOCChart from "../components/KpiGraphs/AttritionSOC.jsx";
 import CombinedYOYChart from "../components/KpiGraphs/CombinedYoY.jsx";
 import FilterEnrollmentOverTimeChart from "../components/KpiGraphs/FilterEnrollmentOverTime.jsx";
 
@@ -296,12 +295,13 @@ export default function KpiDashboard({ username, onLogout }) {
                                                     />
                                                 </div>
                                                 <div className="col-md-6 col-lg-6">
-                                                    <AttritionSOCChart
+                                                    <AttritionYOYChart
                                                         schools={schools}
                                                         years={years}
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
                                                         canvasId="attritionYOYSoc"
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
                                                     />
                                                 </div>
                                             </div>
@@ -333,12 +333,13 @@ export default function KpiDashboard({ username, onLogout }) {
                                                     />
                                                 </div>
                                                 <div className="col-md-6 col-lg-6">
-                                                    <AttritionSOCChart
+                                                    <AttritionYOYChart
                                                         schools={schools}
                                                         years={years}
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
                                                         canvasId="compareAttritionYOYSoc"
+                                                        attritionCollection="ENROLL_ATTRITION_SOC"
                                                     />
                                                 </div>
                                             </div>
