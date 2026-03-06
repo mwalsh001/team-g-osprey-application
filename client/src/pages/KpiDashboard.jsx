@@ -9,6 +9,7 @@ import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
 import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
 import CombinedYOYChart from "../components/KpiGraphs/CombinedYoY.jsx";
 import FilterEnrollmentOverTimeChart from "../components/KpiGraphs/FilterEnrollmentOverTime.jsx";
+import FilterEnrollmentByGenderChart from "../components/KpiGraphs/FilterEnrollmentByGender.jsx";
 
 export default function KpiDashboard({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -196,8 +197,21 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedYearId={selectedYearId}
                                                         canvasId="compareEnrollmentByGender"
                                                     />
+
                                                 </div>
                                             </div>
+                                                <div className="row g-3">
+                                                    <div className="col-md-6">
+                                                        <FilterEnrollmentByGenderChart
+                                                            schools={schools}
+                                                            years={years}
+                                                            selectedSchoolId={selectedSchoolId}
+                                                            selectedYearId={selectedYearId}
+                                                            selectedRegion={selectedRegion}
+                                                            canvasId="filterEnrollmentByGender"
+                                                        />
+                                                     </div>
+                                                </div>
                                         </>
                                     )}
                                 </div>

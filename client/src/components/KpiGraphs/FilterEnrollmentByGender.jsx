@@ -1,44 +1,47 @@
 import { useEffect } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { chooseDisplayYear } from "../../api/annualBenchmarkingApi.js";
+import {genderFilterRegion} from "../../api/annualBenchmarkingApi.js";
 
-export default function EnrollmentByGenderChart({
-                                                    canvasId = "enrollmentByGender",
+
+export default function FilterEnrollmentByGenderChart({
+                                                    canvasId = "filterEnrollmentByGender",
                                                     initialSchoolId = "",
                                                     initialYearId = "",
                                                     selectedSchoolId = "",
                                                     selectedYearId = "",
+                                                    selectedRegion = ""
                                                 }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displaySchoolYear = selectedYearId || initialYearId || "";
+    const displayRegion = selectedRegion ||  "";
 
     useEffect(() => {
+        console.log("updating filter gender chart!")
         async function updateEnrollmentByGender() {
-            if (!displaySchoolId || !displaySchoolYear) return;
+            if (!displayRegion) return;
 
             const payload = {
                 displaySchoolId: Number(displaySchoolId),
                 displaySchoolYear: Number(displaySchoolYear),
+                displayRegion: displayRegion
             };
 
-            const res = await chooseDisplayYear(payload);
-            const ctx = document.getElementById(canvasId);
-
+            const res = await genderFilterRegion(payload);
             console.log(res);
 
-            if (ctx && res && Array.isArray(res)) {
+            if (res && Array.isArray(res)) {
                 const existing = Chart.getChart(canvasId);
                 if (existing) {
                     existing.destroy();
                 }
 
-                new Chart(ctx, {
+                new Chart(document.getElementById(canvasId), {
                     type: "pie",
                     data: {
                         labels: ["Male", "Female", "Non-Binary"],
                         datasets: [
                             {
-                                label: "School Enrollment by Gender",
+                                label: `Average school Enrollment`,
                                 data: res,
                             },
                         ],
@@ -48,13 +51,13 @@ export default function EnrollmentByGenderChart({
         }
 
         updateEnrollmentByGender();
-    }, [displaySchoolId, displaySchoolYear, canvasId]);
+    }, [displaySchoolId, displaySchoolYear, displayRegion, canvasId]);
 
     return (
         <div className="card shadow-sm">
             <div className="card-body">
                 <h6 className="card-title text-center mb-3">
-                    My School's Enrollment By Gender
+                    Enrollment By Gender: Schools in region {displayRegion}
                 </h6>
 
                 <div className="d-flex justify-content-center">
