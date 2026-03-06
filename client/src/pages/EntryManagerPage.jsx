@@ -132,7 +132,9 @@ export default function AnnualFormPage({username, onLogout}) {
             setNotify(`Set inquiries male to ${value}`);
             resetTranscript();
         }
-        const f = text.match(/^set female inquiries to (\d+)$/);
+        const f = text.match(/^set female inquiries to (\d+)$/) ||
+            text.match(/^set mail increase to (\d+)$/) ||
+            text.match(/^set mail inquiries to (\d+)$./);
         if (f) {
             const value = f[1];
             setAaeGrid((prev) => ({
