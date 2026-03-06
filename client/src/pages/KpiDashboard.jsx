@@ -290,7 +290,9 @@ export default function KpiDashboard({ username, onLogout }) {
                                                     <FilterCombinedYOYChart
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedRegion={selectedRegion}
-                                                        canvasId="filterCompareCombinedYOY" />
+                                                        canvasId="filterCompareCombinedYOY"
+                                                        attritionCollection="ENROLL_ATTRITION"
+                                                    />
                                                 </div>
                                                 <div className="col-md-6 col-lg-6">
                                                     <AttritionYOYChart
@@ -364,8 +366,9 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         deriveFromAttrition={true}
                                                         attritionCollection="ENROLL_ATTRITION_SOC"
                                                     />
-                                                    <CombinedYOYChart
+                                                    <FilterCombinedYOYChart
                                                         selectedSchoolId={selectedSchoolId}
+                                                        selectedRegion={selectedRegion}
                                                         canvasId="compareCombinedYOYSoc"
                                                         attritionCollection="ENROLL_ATTRITION_SOC"
                                                         deriveRetentionFromAttrition={true}
@@ -378,6 +381,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
                                                         canvasId="compareAttritionYOYSoc"
+                                                        selectedRegion={selectedRegion}
                                                         attritionCollection="ENROLL_ATTRITION_SOC"
                                                     />
                                                 </div>

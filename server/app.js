@@ -789,12 +789,13 @@ async function run() {
 
     })
 
-    async function getAttritionYOY(SCHOOL_ID) {
+    async function getAttritionYOY(SCHOOL_ID, attritionCol) {
         console.log("inside getAttritionYOY for SCHOOL_ID: " + SCHOOL_ID);
         const yearMapping = await schoolYearCol
             .find({})
             .sort({ ID: 1 })
             .toArray();
+        const collection = attritionCol || eaCol;
 
         // 1. Map years to a stream of Promises
         const rawDataPromises = yearMapping.map(async (year) => {
@@ -803,7 +804,7 @@ async function run() {
             // 2. Fetch enrollment and activity in parallel for THIS specific year
             const [enrollment, activity] = await Promise.all([
                 aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID, GENDER: "U" }).toArray(),
-                eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray()
+                collection.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray()
             ]);
 
             // 3. Calculate baseline Enrollment
@@ -874,7 +875,8 @@ async function run() {
 
     app.post("/api/attritionYOY", requireAuth, async (req, res) => {
         const SCHOOL_ID = req.body.displaySchoolId;
-        let data = await getAttritionYOY(SCHOOL_ID);
+        const attritionCol = getAttritionCollection(req.body.attritionCollection);
+        let data = await getAttritionYOY(SCHOOL_ID, attritionCol);
         console.log("attritionYOY");
         console.log(data);
         data = await yearIndexToActualRetention(data);  // map the year index to actual year
@@ -895,10 +897,11 @@ async function run() {
         //console.log("regionKeys: " + regionKeys)
         let data
         const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+        const attritionCol = getAttritionCollection(req.body.attritionCollection);
 
         for (const key of regionKeys) {
             //const index = regionKeys.indexOf(key);
-            data = await getAttritionYOY(key);
+            data = await getAttritionYOY(key, attritionCol);
             // add to accumulators to get averages
             for (const d of data){
                 yearAccs[0][d.SCHOOL_YR_ID] += d.percentage
@@ -965,6 +968,92 @@ async function run() {
                 attritionRate: Number(attritionRate.toFixed(2))
             });
         }
+
+        res.json(rows);
+    })
+
+    async function getAttritionRatesYearlyForSchool(schoolId, attritionCol, yearMapping) {
+        const rows = [];
+        for (const year of yearMapping) {
+            const SCHOOL_YR_ID = year.ID;
+
+            const enrollment = await aaeCol.find({
+                SCHOOL_ID: schoolId,
+                SCHOOL_YR_ID,
+                GENDER: "U"
+            }).toArray();
+
+            const totalEnrolled = enrollment.reduce((accumulator, obj) => {
+                return accumulator + obj.NR_ENROLLED;
+            }, 0);
+
+            if (totalEnrolled <= 0) continue;
+
+            const activity = await attritionCol.find({
+                SCHOOL_ID: schoolId,
+                SCHOOL_YR_ID
+            }).toArray();
+
+            const totalAdded = activity.reduce((accumulator, obj) => {
+                return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
+            }, 0);
+
+            const totalLeft = activity.reduce((accumulator, obj) => {
+                return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
+            }, 0);
+
+            const startingPop = totalEnrolled + totalAdded;
+
+            if (startingPop <= 0) continue;
+
+            const attritionRate = (totalLeft / startingPop) * 100;
+
+            rows.push({
+                SCHOOL_YR_ID,
+                attritionRate: Number(attritionRate.toFixed(2))
+            });
+        }
+        return rows;
+    }
+
+    app.post("/api/filterAttritionRatesYearly", requireAuth, async (req, res) => {
+        let regionKeys = await schoolCol.find(
+            {REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}}
+        ).toArray();
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))];
+
+        const attritionCol = getAttritionCollection(req.body.attritionCollection);
+
+        const yearMapping = await schoolYearCol
+            .find({})
+            .sort({ID: 1})
+            .toArray();
+
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
+
+        const acc = Object.fromEntries(yearMapping.map(y => [y.ID, {sum: 0, count: 0}]));
+
+        for (const key of regionKeys) {
+            const rates = await getAttritionRatesYearlyForSchool(key, attritionCol, yearMapping);
+            for (const row of rates) {
+                if (!acc[row.SCHOOL_YR_ID]) continue;
+                acc[row.SCHOOL_YR_ID].sum += row.attritionRate;
+                acc[row.SCHOOL_YR_ID].count += 1;
+            }
+        }
+
+        const rows = yearMapping
+            .map((year) => {
+                const entry = acc[year.ID];
+                if (!entry || entry.count === 0) return null;
+                return {
+                    SCHOOL_YR_ID: yearLookup[year.ID] || "Unknown Year",
+                    attritionRate: Number((entry.sum / entry.count).toFixed(2))
+                };
+            })
+            .filter(Boolean);
 
         res.json(rows);
     })

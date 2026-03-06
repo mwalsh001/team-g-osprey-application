@@ -59,7 +59,9 @@ export const chooseFilterDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/
 
 export const retentionYOY = (payload) => apiPost("/api/retentionYOY", payload, "Retention YOY failed");
 export const attritionYOY = (payload) => apiPost("/api/attritionYOY", payload, "Attrition YOY failed");
+export const attritionYOYByRegion = (payload) => apiPost("/api/filterAttritionYOY", payload, "Attrition YOY region failed");
 export const attritionRatesYearly = (payload) => apiPost("/api/attritionRatesYearly", payload, "Attrition yearly rates failed");
+export const filterAttritionRatesYearly = (payload) => apiPost("/api/filterAttritionRatesYearly", payload, "Filter attrition yearly rates failed");
 
 export const filterRetentionYOY = (payload) => apiPost("/api/filterRetentionYOY", payload, "Filter Retention YOY failed");
 export const filterAttritionYOY = (payload) => apiPost("/api/filterAttritionYOY", payload, "Filter Attrition YOY failed");
