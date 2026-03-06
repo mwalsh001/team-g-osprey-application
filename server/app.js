@@ -1395,7 +1395,10 @@ async function run() {
             }, 0);
 
             const startingPop = totalEnrolled + totalAdded;
-            const endingPop = startingPop - totalLeft;
+            let endingPop = startingPop - totalLeft;
+
+            //avoid negative percentages
+            if(endingPop < 0) endingPop = 0
 
             let currentRetRate = 0
 
