@@ -14,7 +14,9 @@ export default function EnrollmentOverTimeChart({
             if (!displaySchoolId) return;
 
             try {
-                const payload = {displaySchoolId: Number(displaySchoolId)};
+                const payload = {
+                    displaySchoolId: Number(displaySchoolId)
+                };
                 const res = await chooseDisplaySchool(payload);
 
                 if (res) {
@@ -23,6 +25,7 @@ export default function EnrollmentOverTimeChart({
 
                     new Chart(document.getElementById(canvasId), {
                         type: "bar",
+
                         data: {
                             labels: res.map((row) => row.SCHOOL_YR_ID),
                             datasets: [
@@ -43,9 +46,17 @@ export default function EnrollmentOverTimeChart({
     }, [displaySchoolId, canvasId]);
 
     return (
-        <div>
-            <div>
-                <canvas id={canvasId}></canvas>
+        <div className="card shadow-sm">
+            <div className="card-body">
+                <h6 className="card-title text-center mb-3">
+                    Enrollment Over Time
+                </h6>
+
+                <div className="d-flex justify-content-center">
+                    <div style={{ width: "90%", height: "300px" }}>
+                        <canvas id={canvasId}></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -15,6 +15,9 @@ export default function RetentionYOYChart({
     const [retentionRate, setRetentionRate] = useState(null);
 
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
+    const displaySchoolYearLabel =
+        years?.find((y) => String(y.id) === String(displaySchoolYear))?.year ??
+        displaySchoolYear;
 
 
     useEffect(() => {
@@ -95,12 +98,20 @@ export default function RetentionYOYChart({
     }, [displaySchoolId, canvasId]);
 
     return (
-        <div>
-            <div>
-                <p>Retention Rate</p>
-                {retentionRate !== null ? `${retentionRate}%` : "--"}
+        <div className="d-flex flex-column gap-3">
+            <div className="card shadow-sm text-center">
+                <div className="card-body">
+                    <h6 className="card-title text-muted mb-1">
+                        Retention Rate{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
+                    </h6>
+                    <div className="fs-4 fw-semibold">
+                        {retentionRate !== null ? `${retentionRate}%` : "--"}
+                    </div>
+                </div>
             </div>
-            <canvas id={canvasId}></canvas>
+
+
         </div>
+
     );
 }

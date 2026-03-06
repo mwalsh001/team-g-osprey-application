@@ -24,6 +24,16 @@ function requireAuth(req, res, next) {
     }
 }
 
+function requireAdmin(req, res, next) {
+    if (!req.user || req.user.role !== "admin") {
+        return res.status(403).json({
+            success: false,
+            message: "Admin access required."
+        });
+    }
+    next();
+}
+
 const url = process.env.MONGODB_URI;
 const dbconnect = new MongoClient(url);
 let usersCollection = null;
@@ -47,30 +57,95 @@ async function run() {
 
     // Login
     app.post("/api/login", async (req, res) => {
-        const {username, password} = req.body;
-
-        let user = await usersCollection.findOne({username});
-        const payload = {
-            username
+        const {username, password, role} = req.body;
+        if (!username || !password || !["school", "admin"].includes(role)) {
+            return res.json({
+                success: false,
+                message: "Valid username, password, and role are required."
+            });
         }
+        let user = await usersCollection.findOne({username});
         if (!user) {
-            await usersCollection.insertOne({username, password});
-            const token = jwt.sign(
-                payload,
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN }
-            );
-            return res.json({ success: true, newUser: true, token });
+            return res.json({
+                success: false,
+                message: "Account not found"
+            });
         }
 
         if (user.password !== password) {
             return res.json({ success: false, message: "Wrong password" });
         }
 
+        if (!user.role) {
+            if (role === "school") {
+                await usersCollection.updateOne(
+                    {username},
+                    {$set: {role: "school"}}
+                );
+                user = {...user, role: "school"};
+            } else {
+                return res.json({
+                    success: false,
+                    message: "account is not registered as an admin."
+                });
+            }
+        }
+        if (user.role !== role) {
+            return res.json({
+                success: false,
+                message: `account is not registered as a ${role}`
+            });
+        }
+        const resSchoolName = user.schoolName || user.school || null;
+        if (role === "school" && !resSchoolName) {
+            return res.json({
+                success: false,
+                message: "School account is missing a school name"
+            });
+        }
+        const payload = {
+            username,
+            role: user.role,
+            schoolName: resSchoolName
+        };
+
         const token = jwt.sign(payload, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN
         });
-        return res.json({ success: true, newUser: false, token });
+        return res.json({
+            success: true,
+            newUser: false,
+            token,
+            role: user.role,
+            schoolName: resSchoolName
+        });
+    });
+
+    app.post("/api/admin/create-school", requireAuth, requireAdmin, async (req, res) => {
+        const {username, password, schoolName} = req.body;
+        if (!username || !password || !schoolName) {
+            return res.status(400).json({
+                success: false,
+                message: "Enter username, password, and schoolName"
+            });
+        }
+        const existingUser = await usersCollection.findOne({username});
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: "Account with this username exists"
+            });
+        }
+        await usersCollection.insertOne({
+            username,
+            password,
+            role: "school",
+            schoolName: String(schoolName).trim()
+        });
+        return res.json({
+            success: true,
+            message: "School account created"
+        });
     });
 
     app.get("/api/schools", requireAuth, async (req, res) => {
@@ -84,6 +159,18 @@ async function run() {
             name: s.NAME_TX,
             region: s.REGION_CD
         })));
+
+    });
+
+    app.get("/api/schoolRegions", requireAuth, async (req, res) => {
+        const rows = await schoolCol
+            .find({REGION_CD: {$exists: true}}, {projection: {REGION_CD: 1}})
+            .sort({REGION_CD: 1})
+            .toArray();
+
+        const uniqueValues = [...new Set(rows.map(item=>item.REGION_CD))]
+        console.log(uniqueValues)
+        res.json(uniqueValues)
     });
 
     app.get("/api/schoolYears", requireAuth, async (req, res) => {
@@ -97,6 +184,7 @@ async function run() {
             year: y.SCHOOL_YEAR
         })));
     });
+
 
     app.get("/api/grades", requireAuth, async (req, res) => {
         const rows = await gradeDefsCol
@@ -405,39 +493,96 @@ async function run() {
         res.json(rows.map(r => ({mongoId: r._id.toString(), ...r})));
     });
 
-    app.post("/api/chooseDisplaySchool", requireAuth, async (req, res) => {
-        // console.log(req.query);
-        // console.log(req.body);
-        const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
-        const GENDER = "U";
-        let filter = {SCHOOL_ID, GENDER};
+    async function getSchoolEnrollmentData(filter) {
+        let rows;
+        return rows = await aaeCol.aggregate([
+            {$match: {...filter, NR_ENROLLED: {$ne: null}}},
 
+            // Combine rows with same SCHOOL_ID, GENDER, SCHOOL_YR_ID
+            {
+                $group: {
+                    _id: "$SCHOOL_YR_ID",
+                    NR_ENROLLED: {$sum: "$NR_ENROLLED"}
+                }
+            },
+
+             // Sort by year
+            {$sort: {_id: 1}},
+
+            // Rename fields for consistency
+            {
+                $project: {
+                    SCHOOL_YR_ID: "$_id",
+                    NR_ENROLLED: 1,
+                    _id: 0
+                }
+            }
+        ]).toArray();
+    }
+
+    async function yearIndexToActual(data){
         // Fetch the records and the year mappings (map the ID to the actual year
-        let [rows, yearMapping] = await Promise.all([
-            aaeCol.find(filter, {
-                projection: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1, NR_ENROLLED: 1}
-            })  // only get these attributes of the object
-                .sort({SCHOOL_YR_ID: 1})  // sort the list to be in order of year
-                .toArray(),
-            schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
-        ]);
+        let yearMapping = await schoolYearCol.find({}).toArray();  // Get the objects from SCHOOL_YEAR
 
         // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
         // This creates an array where index is ID and value is the actual year
         const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-        //console.log("yearLookup[1]: "+ yearLookup[1]);
 
-        rows = rows.filter(e => e.NR_ENROLLED !== null)
-            .map((current) => {
-                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+        data = data.map((current) => {
+            const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+            return {
+                SCHOOL_YR_ID: actualYear,
+                NR_ENROLLED: current.NR_ENROLLED
+            };
+        })
+        return data
+    }
 
-                return {
-                    SCHOOL_YR_ID: actualYear,
-                    NR_ENROLLED: current.NR_ENROLLED
-                };
-            })
-        //console.log(rows);
-        res.json(rows);
+
+    app.post("/api/chooseDisplaySchool", requireAuth, async (req, res) => {
+
+        const SCHOOL_ID = req.body.displaySchoolId; //Number(req.query);
+        const GENDER = "U"
+        let filter = {SCHOOL_ID, GENDER};
+        let data = await getSchoolEnrollmentData(filter)
+        data = await yearIndexToActual(data)
+        res.json(data)
+
+    })
+
+    app.post("/api/chooseFilterRegion", requireAuth, async (req, res) => {
+
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        console.log("regionKeys: " + regionKeys)
+        let REGION_CD = req.body.displayRegion
+        let data
+        const GENDER = "U"
+        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+
+        for (const key of regionKeys) {
+            const index = regionKeys.indexOf(key);
+            const SCHOOL_ID = key;
+            let filter = {SCHOOL_ID, GENDER};
+            data = await getSchoolEnrollmentData(filter);
+            //console.log(data)
+            // add to accumulators to get averages
+            for (const d of data){
+                yearAccs[0][d.SCHOOL_YR_ID] += d.NR_ENROLLED
+                yearAccs[1][d.SCHOOL_YR_ID] += 1
+            }
+        }
+        let avgArray = Array(34)
+        for (let i = 1; i < avgArray.length; i++){
+            avgArray[i] = {SCHOOL_YR_ID: i, NR_ENROLLED: yearAccs[0][i]/yearAccs[1][i]}
+        }
+        avgArray = await yearIndexToActual(avgArray)
+        avgArray = avgArray.slice(1, 34)
+        res.json(avgArray)
+
     })
 
     app.post("/api/chooseDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
@@ -448,7 +593,11 @@ async function run() {
 
         // Fetch the records and the year mappings (map the ID to the actual year
         const [rows, yearMapping] = await Promise.all([
-            aaeCol.find({SCHOOL_ID, ENROLLMENT_TYPE_CD, GENDER})  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
+            aaeCol.find({
+                SCHOOL_ID,
+                ENROLLMENT_TYPE_CD,
+                GENDER
+            })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
                 .sort({SCHOOL_YR_ID: 1})
                 .toArray(),
             schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
@@ -765,7 +914,7 @@ async function run() {
         });
     })
 
-    //CURRENT BUG: attrition percent undefined and most common reason not found
+
     app.post("/api/attritionYear", requireAuth, async (req, res) => {
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
@@ -810,25 +959,23 @@ async function run() {
             {reason: "Did Not Return", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0)},
         ];
 
-        const mostCommon = reasons.reduce((max, curr) => (curr.value > max.value ? curr : max));
-
         res.json({
             attritionRate: Number(attritionRate.toFixed(2)),
-            mostCommon: mostCommon.reason
+            dissOrWthd: reasons[0].value,
+            notInvited: reasons[1].value,
+            notReturn: reasons[2].value
         });
 
 
     })
 
+    const clientDist = path.join(__dirname, "..", "client", "dist");
+    app.use(express.static(clientDist));
 
+    app.get(/^(?!\/api|\/submit|\/protected).*/, (req, res) => {
+        res.sendFile(path.join(clientDist, "index.html"));
+    });
 }
-
-const clientDist = path.join(__dirname, "..", "client", "dist");
-app.use(express.static(clientDist));
-
-app.get(/^(?!\/api|\/submit|\/protected).*/, (req, res) => {
-    res.sendFile(path.join(clientDist, "index.html"));
-});
 
 const PORT = process.env.PORT || 3000;
 
