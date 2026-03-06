@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { retentionYOY, getRetention, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
+import { retentionYOY, getRetention } from "../../api/annualBenchmarkingApi.js";
 
 
 export default function RetentionYOYChart ({
@@ -9,12 +9,12 @@ export default function RetentionYOYChart ({
                                                initialSchoolId = "",
                                                selectedSchoolId = "",
                                                selectedYearId = "",
-                                               deriveFromAttrition = false,
-                                               attritionCollection = "ENROLL_ATTRITION",
+                                                selectedRegion = ""
                                            }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
     const [retentionRate, setRetentionRate] = useState(null);
+    const displayRegion = selectedRegion ||  "";
 
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displaySchoolYearLabel =
@@ -34,34 +34,27 @@ export default function RetentionYOYChart ({
         async function updateRetention() {
             if (!displaySchoolId || !displaySchoolYear) return;
             try {
-                if (deriveFromAttrition) {
-                    const res = await getAttritionRate({
-                        displaySchoolId: Number(displaySchoolId),
-                        displaySchoolYear: Number(displaySchoolYear),
-                        attritionCollection,
-                    });
-                    if (res && typeof res.attritionRate === "number") {
-                        setRetentionRate(Number((100 - res.attritionRate).toFixed(2)));
-                    }
-                    return;
-                }
-
-                const res = await getRetention({
+                const payload = {
                     displaySchoolId: Number(displaySchoolId),
-                    displaySchoolYear: Number(displaySchoolYear),
-                });
-                if (res) setRetentionRate(res.retentionRate);
+                    displaySchoolYear: Number(displaySchoolYear)
+                }
+                if(displayRegion !== ""){
+                    payload.displayRegion = displayRegion
+                }
+                console.log("payload:" + payload)
+                const res = await getRetention(payload);
+                if (res) setRetentionRate(res);
+                console.log("retentionRate: ", retentionRate)
             } catch (err) {
                 console.error("Retention rate failed:", err);
             }
         }
         updateRetention();
-    }, [displaySchoolId, displaySchoolYear, deriveFromAttrition, attritionCollection]);
+    }, [displaySchoolId, displaySchoolYear, displayRegion]);
 
     useEffect(() => {
         async function updateRetentionYOY() {
             if (!displaySchoolId) return;
-            if (deriveFromAttrition) return;
             try {
                 const res = await retentionYOY({ displaySchoolId: Number(displaySchoolId) });
                 if (res) {
@@ -108,7 +101,7 @@ export default function RetentionYOYChart ({
             }
         }
         updateRetentionYOY();
-    }, [displaySchoolId, canvasId, deriveFromAttrition]);
+    }, [displaySchoolId, canvasId]);
 
     return (
         <div className="d-flex flex-column gap-3">
@@ -118,7 +111,18 @@ export default function RetentionYOYChart ({
                         Retention Rate{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                     </h6>
                     <div className="fs-4 fw-semibold">
-                        {retentionRate !== null ? `${retentionRate}%` : "--"}
+                        {/* Always show the first rate if data exists */}
+                        {retentionRate !== null && retentionRate.length >= 1 && (
+                            <div>My School: {retentionRate[0]}%</div>
+                        )}
+
+                        {/* Only show the second rate if the array has at least two items */}
+                        {retentionRate !== null && retentionRate.length >= 2 && (
+                            <div>Schools in region {displayRegion}: {retentionRate[1]}%</div>
+                        )}
+
+                        {/* Fallback if data hasn't loaded yet */}
+                        {retentionRate === null && "--"}
                     </div>
                 </div>
             </div>

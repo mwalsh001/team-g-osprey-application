@@ -304,6 +304,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         years={years}
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
+                                                        selectedRegion={selectedRegion}
                                                         canvasId="compareRetentionYOY"
                                                     />
                                                     <FilterCombinedYOYChart
@@ -319,6 +320,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         years={years}
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
+                                                        selectedRegion={selectedRegion}
                                                         canvasId="compareAttritionYOY"
                                                     />
                                                 </div>
