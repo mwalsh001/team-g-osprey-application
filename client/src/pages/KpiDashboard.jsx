@@ -103,7 +103,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                 >
                                                     {schools.map((s) => (
                                                         <option key={s.id} value={String(s.id)}>
-                                                            {s.name} (ID: {s.id})
+                                                            {s.name}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -119,7 +119,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                             >
                                                 {years.map((y) => (
                                                     <option key={y.id} value={String(y.id)}>
-                                                        {y.year ?? y.id} (ID: {y.id})
+                                                        {y.year ?? y.id}
                                                     </option>
                                                 ))}
                                             </select>

@@ -281,7 +281,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                 <div className="text-muted">
                     {selectedSchool ? (
                         <>
-                            <strong>School:</strong> {selectedSchool.name} (ID: {selectedSchool.id})
+                                        <strong>School:</strong> {selectedSchool.name}
                         </>
                     ) : (
                         <span>Select a school</span>
@@ -289,7 +289,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     {" | "}
                     {selectedYear ? (
                         <>
-                            <strong>Year:</strong> {selectedYear.year ?? selectedYear.id} (ID: {selectedYear.id})
+                                        <strong>Year:</strong> {selectedYear.year ?? selectedYear.id}
                         </>
                     ) : (
                         <span>Select a year</span>
@@ -297,7 +297,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     {" | "}
                     {selectedGrade ? (
                         <>
-                            <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id} (ID: {selectedGrade.id})
+                                        <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id}
                         </>
                     ) : (
                         <span>Select a grade</span>
@@ -350,11 +350,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                             value={schoolId}
                             onChange={(e) => setSchoolId(e.target.value)}
                         >
-                            {schools.map((s) => (
-                                <option key={s.id} value={String(s.id)}>
-                                    {s.name} (ID: {s.id})
-                                </option>
-                            ))}
+                                                    {schools.map((s) => (
+                                                        <option key={s.id} value={String(s.id)}>
+                                                            {s.name}
+                                                        </option>
+                                                    ))}
                         </select>
                     )}
                 </div>
@@ -366,11 +366,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                         value={schoolYearId}
                         onChange={(e) => setSchoolYearId(e.target.value)}
                     >
-                        {years.map((y) => (
-                            <option key={y.id} value={String(y.id)}>
-                                {y.year ?? y.id} (ID: {y.id})
-                            </option>
-                        ))}
+                                                {years.map((y) => (
+                                                    <option key={y.id} value={String(y.id)}>
+                                                        {y.year ?? y.id}
+                                                    </option>
+                                                ))}
                     </select>
                 </div>
 
@@ -381,11 +381,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                         value={gradeId}
                         onChange={(e) => setGradeId(e.target.value)}
                     >
-                        {grades.map((g) => (
-                            <option key={g.id} value={String(g.id)}>
-                                {g.name ?? g.id} (ID: {g.id})
-                            </option>
-                        ))}
+                                                {grades.map((g) => (
+                                                    <option key={g.id} value={String(g.id)}>
+                                                        {g.name ?? g.id}
+                                                    </option>
+                                                ))}
                     </select>
                 </div>
             </div>
