@@ -589,6 +589,40 @@ async function run() {
 
     })
 
+    app.post("/api/genderFilterRegion", requireAuth, async (req, res) => {
+
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        //console.log("regionKeys: " + regionKeys)
+        let SCHOOL_YR_ID = req.body.displaySchoolYear
+        let data
+        const yearAccs = new Array(3).fill(0);
+
+        for (const key of regionKeys) {
+            const SCHOOL_ID = key;
+            let filter = {SCHOOL_ID, SCHOOL_YR_ID};
+            filter.GENDER = "M"
+            data = await getSchoolEnrollmentData(filter);
+            yearAccs[0] += data.reduce((sum, d) => sum + (d.NR_ENROLLED || 0), 0);
+
+            filter.GENDER = "F"
+            data = await getSchoolEnrollmentData(filter);
+            yearAccs[1] += data.reduce((sum, d) => sum + (d.NR_ENROLLED || 0), 0);
+
+            filter.GENDER = "NB"
+            data = await getSchoolEnrollmentData(filter);
+            yearAccs[2] += data.reduce((sum, d) => sum + (d.NR_ENROLLED || 0), 0);
+        }
+        let avgArray = Array(3)
+        for (let i = 0; i < avgArray.length; i++){
+            avgArray[i] = yearAccs[i]/regionKeys.length
+        }
+        res.json(avgArray)
+    })
+
     async function getSchoolInquiriesYOY(filter) {
         let rows = await aaeCol.find(filter)  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
             .sort({SCHOOL_YR_ID: 1}).toArray();
@@ -1023,42 +1057,66 @@ async function run() {
     app.post("/api/retention", requireAuth, async (req, res) => {
         const schoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
-
-        const enrollment = await aaeCol.find({
-            SCHOOL_ID: schoolId,
-            SCHOOL_YR_ID: schoolYear,
-            GENDER: "U"
-        }).toArray();
-
-        const totalEnrolled = enrollment.reduce((accumulator, obj) => {
-            return accumulator + obj.NR_ENROLLED;
-        }, 0);
-
-        const activity = await eaCol.find({
-            SCHOOL_ID: schoolId,
-            SCHOOL_YR_ID: schoolYear
-        }).toArray();
-
-        const totalAdded = activity.reduce((accumulator, obj) => {
-            return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
-        }, 0);
-
-        const totalLeft = activity.reduce((accumulator, obj) => {
-            return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
-        }, 0);
-
-        const startingPop = totalEnrolled + totalAdded;
-        const endingPop = startingPop - totalLeft;
-
-        let retentionRate = 0;
-
-        if (startingPop > 0) {
-            retentionRate = (endingPop / startingPop) * 100;
+        var acc = 0
+        var loopCount = 0
+        let regionKeys = []
+        let returnArr = []
+        if(req.body.displayRegion){
+            regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+                {projection:{ID: 1}})
+                .toArray()
+            regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+            loopCount = regionKeys.length
         }
 
-        res.json({
-            retentionRate: Number(retentionRate.toFixed(2))
-        });
+        //last loop run is for the selected school/individual retention rate
+        for (let i = 0; i <= loopCount; i++){
+            let SCHOOL_ID
+            if(i === loopCount){
+                SCHOOL_ID = schoolId
+            }
+            else SCHOOL_ID = regionKeys[i]
+
+            const enrollment = await aaeCol.find({
+                SCHOOL_ID: regionKeys[i],
+                SCHOOL_YR_ID: schoolYear,
+                GENDER: "U"
+            }).toArray();
+
+            const totalEnrolled = enrollment.reduce((accumulator, obj) => {
+                return accumulator + obj.NR_ENROLLED;
+            }, 0);
+
+            const activity = await eaCol.find({
+                SCHOOL_ID: schoolId,
+                SCHOOL_YR_ID: schoolYear
+            }).toArray();
+
+            const totalAdded = activity.reduce((accumulator, obj) => {
+                return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
+            }, 0);
+
+            const totalLeft = activity.reduce((accumulator, obj) => {
+                return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
+            }, 0);
+
+            const startingPop = totalEnrolled + totalAdded;
+            const endingPop = startingPop - totalLeft;
+
+            let currentRetRate = 0
+
+            if (startingPop > 0) {
+                currentRetRate = (endingPop / startingPop) * 100;
+            }
+
+            if(i !== loopCount) acc += currentRetRate
+            else returnArr[0] = currentRetRate
+
+        }
+        if(req.body.displayRegion){
+            returnArr[1] = Math.trunc(acc/regionKeys.length)
+        }
+        res.json(returnArr);
     })
 
 
