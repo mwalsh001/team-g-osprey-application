@@ -39,18 +39,29 @@ export default function FilterInquiriesYOYChart({
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
+                    const schoolColor = "rgba(54, 162, 235, 0.6)";
+                    const schoolBorder = "rgba(54, 162, 235, 1)";
+                    const regionColor = "rgba(255, 99, 132, 0.6)";
+                    const regionBorder = "rgba(255, 99, 132, 1)";
+
                     new Chart(document.getElementById(canvasId), {
                         type: "line",
                         data: {
                             labels,
                             datasets: [
                                 {
-                                    label: `Inquiries by year in region ${selectedRegion}`,
-                                    data: res.map((row) => row.NR_ENROLLED),
+                                    label: `Inquiries by year for school ${selectedSchoolId}`,
+                                    data: alignedRes2,
+                                    backgroundColor: schoolColor,
+                                    borderColor: schoolBorder,
+                                    pointBackgroundColor: schoolBorder,
                                 },
                                 {
-                                    label: `Inquiries by year for school ${selectedSchoolId}`,
-                                    data: alignedRes2
+                                    label: `Inquiries by year in region ${selectedRegion}`,
+                                    data: res.map((row) => row.NR_ENROLLED),
+                                    backgroundColor: regionColor,
+                                    borderColor: regionBorder,
+                                    pointBackgroundColor: regionBorder,
                                 },
                             ],
                         },
