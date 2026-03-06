@@ -8,6 +8,7 @@ import EnrollmentByGenderChart from "../components/KpiGraphs/EnrollmentByGender.
 import RetentionYOYChart from "../components/KpiGraphs/Retention.jsx";
 import AttritionYOYChart from "../components/KpiGraphs/Attrition.jsx";
 import CombinedYOYChart from "../components/KpiGraphs/CombinedYoY.jsx";
+import FilterCombinedYOYChart from "../components/KpiGraphs/FilterCombinedYoY.jsx";
 import FilterEnrollmentOverTimeChart from "../components/KpiGraphs/FilterEnrollmentOverTime.jsx";
 
 export default function KpiDashboard({ username, onLogout }) {
@@ -251,7 +252,10 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedYearId={selectedYearId}
                                                         canvasId="compareRetentionYOY"
                                                     />
-                                                    <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="compareCombinedYOY" />
+                                                    <FilterCombinedYOYChart
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedRegion={selectedRegion}
+                                                        canvasId="filterCompareCombinedYOY" />
                                                 </div>
                                                 <div className="col-md-6 col-lg-6">
                                                     <AttritionYOYChart

@@ -60,6 +60,9 @@ export const chooseFilterDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/
 export const retentionYOY = (payload) => apiPost("/api/retentionYOY", payload, "Retention YOY failed");
 export const attritionYOY = (payload) => apiPost("/api/attritionYOY", payload, "Attrition YOY failed");
 
+export const filterRetentionYOY = (payload) => apiPost("/api/filterRetentionYOY", payload, "Filter Retention YOY failed");
+export const filterAttritionYOY = (payload) => apiPost("/api/filterAttritionYOY", payload, "Filter Attrition YOY failed");
+
 export const getRetention = (payload) => apiPost("/api/retention", payload, "Get retention failed");
 export const getAttritionRate = (payload) => apiPost("/api/attritionYear", payload, "Get attrition failed");
 function authHeaders() {

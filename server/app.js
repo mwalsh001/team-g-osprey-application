@@ -628,66 +628,8 @@ async function run() {
 
         let filter = {SCHOOL_ID, GENDER, ENROLLMENT_TYPE_CD};
         let data = await getSchoolInquiriesYOY(filter);
-        // console.log("BEFORE MAP YEARS");
-        // console.log(data);
         data = await yearIndexToActual(data);  // map the year index to actual year
-        // console.log("AFTER MAP YEARS");
-        // console.log(data);
         res.json(data);
-
-        // // Fetch the records and the year mappings (map the ID to the actual year
-        // const [rows, yearMapping] = await Promise.all([
-        //     aaeCol.find({
-        //         SCHOOL_ID,
-        //         ENROLLMENT_TYPE_CD,
-        //         GENDER
-        //     })  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
-        //         .sort({SCHOOL_YR_ID: 1})
-        //         .toArray(),
-        //     schoolYearCol.find({}).toArray()  // Get the objects from SCHOOL_YEAR
-        // ]);
-        // // console.log("yearMapping[1].ID: " + yearMapping[1].ID);
-        // // console.log("yearMapping[1].SCHOOL_YEAR: " + yearMapping[1].SCHOOL_YEAR);
-        //
-        // // Create a Quick Lookup Map with the objects from the SCHOOL_YEAR table
-        // // This creates an array where index is ID and value is the actual year
-        // const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-        // //console.log("yearLookup[1]: "+ yearLookup[1]);
-        // //console.log("yearLookup[1].SCHOOL_YEAR: "+ yearLookup[1].SCHOOL_YEAR);``
-        //
-        // // Calculate percentages for corresponding year
-        // const report = rows
-        //     // Filter out any objects where NR_ENROLLED is null or undefined
-        //     .filter(row => row.NR_ENROLLED !== null && row.NR_ENROLLED !== undefined)
-        //     .map((current, index, validRows) => {
-        //         // If it's the first valid year, can't calculate % change yet
-        //         if (index === 0) return null;
-        //
-        //         const previous = validRows[index - 1];
-        //         const v1 = previous.NR_ENROLLED;
-        //         const v2 = current.NR_ENROLLED;
-        //
-        //         // Calculate the percentage: ((year2 - year1) / year1) * 100
-        //         const percentChange = v1 !== 0
-        //             ? ((v2 - v1) / v1) * 100
-        //             : 0;
-        //         //console.log("percentChange: "+percentChange);
-        //
-        //         // Swap the Foreign Key for the actual year
-        //         //console.log("current.SCHOOL_YR_ID: "+current.SCHOOL_YR_ID);
-        //         const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-        //         //console.log("actualYear: "+actualYear);
-        //
-        //         return {
-        //             SCHOOL_YR_ID: actualYear,
-        //             //NR_Enrolled: v2,
-        //             percentage: percentChange
-        //             //percentage: `${percentChange.toFixed(2)}%`
-        //         };
-        //     })
-        //     .filter(Boolean); // Remove the 'null' from the first year
-        // //console.log(report);
-        // res.json(report);
     })
 
     app.post("/api/chooseFilterDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
@@ -727,150 +669,176 @@ async function run() {
 
     })
 
-    app.post("/api/retentionYOY", requireAuth, async (req, res) => {
-        const SCHOOL_ID = req.body.displaySchoolId;
+    // 35 sec runtime
+    async function getRetentionYOY(SCHOOL_ID) {
+        console.log("inside getRetentionYOY for SCHOOL_ID: " + SCHOOL_ID);
 
-        const yearMapping = await schoolYearCol
-            .find({})
-            .sort({ID: 1})
-            .toArray();
+        // 1. Get the year mapping first (still needed for the loop base)
+        const yearMapping = await schoolYearCol.find({}).sort({ ID: 1 }).toArray();
 
-        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-
-        const rows = [];
-
-
-        for (const year of yearMapping) {
+        // 2. Map years to a "stream" of Promises (all start immediately)
+        const rawDataPromises = yearMapping.map(async (year) => {
             const SCHOOL_YR_ID = year.ID;
 
-            const enrollment = await aaeCol.find({
-                SCHOOL_ID,
-                SCHOOL_YR_ID,
-                GENDER: "U"
-            }).toArray();
+            // Fetch enrollment and activity in parallel for THIS year
+            const [enrollment, activity] = await Promise.all([
+                aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID, GENDER: "U" }).toArray(),
+                eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray()
+            ]);
 
-            const totalEnrolled = enrollment.reduce((acc, obj) =>
-                acc + obj.NR_ENROLLED, 0);
-
-            if (totalEnrolled <= 0) continue;
-
-            const activity = await eaCol.find({
-                SCHOOL_ID,
-                SCHOOL_YR_ID
-            }).toArray();
+            const totalEnrolled = enrollment.reduce((acc, obj) => acc + (obj.NR_ENROLLED || 0), 0);
+            if (totalEnrolled <= 0) return null;
 
             const totalAdded = activity.reduce((acc, obj) =>
-                acc + obj.STUDENTS_ADDED_DURING_YEAR, 0);
+                acc + (obj.STUDENTS_ADDED_DURING_YEAR || 0), 0);
 
             const totalLeft = activity.reduce((acc, obj) =>
-                acc + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN, 0);
+                acc + (obj.STUD_DISS_WTHD || 0) + (obj.STUD_NOT_INV || 0) + (obj.STUD_NOT_RETURN || 0), 0);
 
             const startingPop = totalEnrolled + totalAdded;
+            if (startingPop <= 0) return null;
+
             const endingPop = startingPop - totalLeft;
+            const retentionRate = (endingPop / startingPop) * 100;
 
-            if (startingPop <= 0) continue;
+            return { SCHOOL_YR_ID, retentionRate };
+        });
 
-            let retentionRate = 0;
+        // 3. Wait for all years to resolve at once
+        const rawRows = (await Promise.all(rawDataPromises)).filter(Boolean);
 
-            if (startingPop > 0) {
-                retentionRate = (endingPop / startingPop) * 100;
-            }
+        // 4. Calculate Year-Over-Year change (same logic as before)
+        return rawRows.map((current, index, validRows) => {
+            if (index === 0) return null;
 
-            rows.push({
-                SCHOOL_YR_ID,
-                retentionRate
-            });
-        }
+            const previous = validRows[index - 1];
+            const v1 = previous.retentionRate;
+            const v2 = current.retentionRate;
 
-        const report = rows
-            .filter(row => row.retentionRate !== null && row.retentionRate !== undefined)
-            .map((current, index, validRows) => {
-                // If it's the first valid year, can't calculate % change yet
-                if (index === 0) return null;
+            if (v1 <= 0) return null; // Avoid division by zero
 
+            const percentChange = ((v2 - v1) / v1) * 100;
 
-                const previous = validRows[index - 1];
-                const v1 = previous.retentionRate;
-                const v2 = current.retentionRate;
+            return {
+                SCHOOL_YR_ID: current.SCHOOL_YR_ID,
+                percentage: percentChange
+            };
+        }).filter(Boolean);
+    }
 
-                if (v1 <= 0 || v2 <= 0)
-                    return null;
+    async function yearIndexToActualRetention(data){
+        let yearMapping = await schoolYearCol.find({}).toArray();  // Get the objects from SCHOOL_YEAR
+        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
 
-                // Calculate the percentage: ((year2 - year1) / year1) * 100
-                const percentChange = v1 !== 0
-                    ? ((v2 - v1) / v1) * 100
-                    : 0;
+        data = data.map((current) => {
+            const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+            return {
+                SCHOOL_YR_ID: actualYear,
+                percentage: current.percentage
+            };
+        })
+        return data
+    }
 
-                // Swap the Foreign Key for the actual year
-                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
+    app.post("/api/retentionYOY", requireAuth, async (req, res) => {
 
-                return {
-                    SCHOOL_YR_ID: actualYear,
-                    //NR_Enrolled: v2,
-                    percentage: percentChange
-                    //percentage: `${percentChange.toFixed(2)}%`
-                };
-            })
-            .filter(Boolean); // Remove the 'null' from the first year
-        res.json(report);
+        const SCHOOL_ID = req.body.displaySchoolId;
+        let data = await getRetentionYOY(SCHOOL_ID);
+        // console.log(data);
+        data = await yearIndexToActualRetention(data);  // map the year index to actual year
+        // console.log(data);
+        res.json(data);
 
     })
 
-    app.post("/api/attritionYOY", requireAuth, async (req, res) => {
-        const SCHOOL_ID = req.body.displaySchoolId;
+    app.post("/api/filterRetentionYOY", requireAuth, async (req, res) => {
 
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        console.log("Regionkeys: "+regionKeys);
+        //console.log("regionKeys: " + regionKeys)
+        let data
+        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+
+        for (const key of regionKeys) {
+            //const index = regionKeys.indexOf(key);
+            data = await getRetentionYOY(key);
+            // add to accumulators to get averages
+            for (const d of data){
+                yearAccs[0][d.SCHOOL_YR_ID] += d.percentage
+                yearAccs[1][d.SCHOOL_YR_ID] += 1
+            }
+        }
+        let avgArray = Array(34)
+        for (let i = 1; i < avgArray.length; i++){
+            avgArray[i] = {SCHOOL_YR_ID: i, percentage: yearAccs[0][i]/yearAccs[1][i]}
+        }
+        avgArray = await yearIndexToActualRetention(avgArray)
+        avgArray = avgArray.slice(1, 34)
+        console.log("AVGARRAY Retention")
+        console.log(avgArray);
+        res.json(avgArray)
+
+    })
+
+    async function getAttritionYOY(SCHOOL_ID) {
+        console.log("inside getAttritionYOY for SCHOOL_ID: " + SCHOOL_ID);
         const yearMapping = await schoolYearCol
             .find({})
-            .sort({ID: 1})
+            .sort({ ID: 1 })
             .toArray();
 
-        const yearLookup = Object.fromEntries(yearMapping.map(y => [y.ID, y.SCHOOL_YEAR]));
-
-        const rows = [];
-
-
-        for (const year of yearMapping) {
+        // 1. Map years to a stream of Promises
+        const rawDataPromises = yearMapping.map(async (year) => {
             const SCHOOL_YR_ID = year.ID;
 
-            const enrollment = await aaeCol.find({
-                SCHOOL_ID,
-                SCHOOL_YR_ID,
-                GENDER: "U"
-            }).toArray();
+            // 2. Fetch enrollment and activity in parallel for THIS specific year
+            const [enrollment, activity] = await Promise.all([
+                aaeCol.find({ SCHOOL_ID, SCHOOL_YR_ID, GENDER: "U" }).toArray(),
+                eaCol.find({ SCHOOL_ID, SCHOOL_YR_ID }).toArray()
+            ]);
 
+            // 3. Calculate baseline Enrollment
             const totalEnrolled = enrollment.reduce((acc, obj) =>
-                acc + obj.NR_ENROLLED, 0);
+                acc + (obj.NR_ENROLLED || 0), 0
+            );
 
-            if (totalEnrolled <= 0) continue;
+            // Skip year if there is no enrollment data
+            if (totalEnrolled <= 0) return null;
 
-            const activity = await eaCol.find({
-                SCHOOL_ID,
-                SCHOOL_YR_ID
-            }).toArray();
-
+            // 4. Calculate Activity (Added and Left)
             const totalAdded = activity.reduce((acc, obj) =>
-                acc + obj.STUDENTS_ADDED_DURING_YEAR, 0);
+                acc + (obj.STUDENTS_ADDED_DURING_YEAR || 0), 0
+            );
 
             const totalLeft = activity.reduce((acc, obj) =>
-                acc + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN, 0);
+                acc +
+                (obj.STUD_DISS_WTHD || 0) +
+                (obj.STUD_NOT_INV || 0) +
+                (obj.STUD_NOT_RETURN || 0), 0
+            );
 
+            // 5. Calculate Attrition (Who Left)
             const startingPop = totalEnrolled + totalAdded;
 
-            if (startingPop <= 0) continue;
+            // Safety check for division by zero
+            if (startingPop <= 0) return null;
 
-            let attritionRate = 0;
+            // The formula for Attrition Rate: (Those who left / Starting Population) * 100
+            const attritionRate = (totalLeft / startingPop) * 100;
 
-            if (startingPop > 0) {
-                attritionRate = (totalLeft / startingPop) * 100;
-            }
-
-            rows.push({
+            return {
                 SCHOOL_YR_ID,
                 attritionRate
-            });
-        }
+            };
+        });
 
-        const report = rows
+        // 6. Resolve all and filter out nulls
+        const rows = (await Promise.all(rawDataPromises)).filter(row => row !== null);
+        return rows
             .filter(row => row.attritionRate !== null && row.attritionRate !== undefined)
             .map((current, index, validRows) => {
                 // If it's the first valid year, can't calculate % change yet
@@ -889,17 +857,58 @@ async function run() {
                     ? ((v2 - v1) / v1) * 100
                     : 0;
 
-                // Swap the Foreign Key for the actual year
-                const actualYear = yearLookup[current.SCHOOL_YR_ID] || "Unknown Year";
-
                 return {
-                    SCHOOL_YR_ID: actualYear,
+                    SCHOOL_YR_ID: current.SCHOOL_YR_ID,
                     percentage: percentChange
                     //percentage: `${percentChange.toFixed(2)}%`
                 };
             })
             .filter(Boolean); // Remove the 'null' from the first year
-        res.json(report);
+
+    }
+
+    app.post("/api/attritionYOY", requireAuth, async (req, res) => {
+        const SCHOOL_ID = req.body.displaySchoolId;
+        let data = await getAttritionYOY(SCHOOL_ID);
+        console.log("attritionYOY");
+        console.log(data);
+        data = await yearIndexToActualRetention(data);  // map the year index to actual year
+        console.log("Await id to actual yr");
+        console.log(data);
+        res.json(data);
+
+    })
+
+    app.post("/api/filterAttritionYOY", requireAuth, async (req, res) => {
+
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        console.log("Regionkeys: "+regionKeys);
+        //console.log("regionKeys: " + regionKeys)
+        let data
+        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+
+        for (const key of regionKeys) {
+            //const index = regionKeys.indexOf(key);
+            data = await getAttritionYOY(key);
+            // add to accumulators to get averages
+            for (const d of data){
+                yearAccs[0][d.SCHOOL_YR_ID] += d.percentage
+                yearAccs[1][d.SCHOOL_YR_ID] += 1
+            }
+        }
+        let avgArray = Array(34)
+        for (let i = 1; i < avgArray.length; i++){
+            avgArray[i] = {SCHOOL_YR_ID: i, percentage: yearAccs[0][i]/yearAccs[1][i]}
+        }
+        avgArray = await yearIndexToActualRetention(avgArray)
+        avgArray = avgArray.slice(1, 34)
+        console.log("AVGARRAY Attrition")
+        console.log(avgArray);
+        res.json(avgArray)
 
     })
 
