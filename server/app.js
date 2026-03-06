@@ -1354,6 +1354,7 @@ async function run() {
         var loopCount = 0
         let regionKeys = []
         let returnArr = []
+        let accCount = 0
         if(req.body.displayRegion){
             regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
                 {projection:{ID: 1}})
@@ -1371,7 +1372,7 @@ async function run() {
             else SCHOOL_ID = regionKeys[i]
 
             const enrollment = await aaeCol.find({
-                SCHOOL_ID: regionKeys[i],
+                SCHOOL_ID: SCHOOL_ID,
                 SCHOOL_YR_ID: schoolYear,
                 GENDER: "U"
             }).toArray();
@@ -1381,7 +1382,7 @@ async function run() {
             }, 0);
 
             const activity = await eaCol.find({
-                // SCHOOL_ID: schoolId,  // should this be SCHOOL_ID: regionKeys[i] ?
+                 SCHOOL_ID: SCHOOL_ID,  // should this be SCHOOL_ID: regionKeys[i] ?
                 SCHOOL_YR_ID: schoolYear
             }).toArray();
 
@@ -1402,12 +1403,17 @@ async function run() {
                 currentRetRate = (endingPop / startingPop) * 100;
             }
 
-            if(i !== loopCount) acc += currentRetRate
-            else returnArr[0] = currentRetRate
+            if(i !== loopCount){
+                acc += currentRetRate
+                if(currentRetRate !== 0){
+                    accCount++
+                }
+            }
+            else returnArr[0] = Math.trunc(currentRetRate)
 
         }
         if(req.body.displayRegion){
-            returnArr[1] = Math.trunc(acc/regionKeys.length)
+            returnArr[1] = Math.trunc(acc/accCount)
         }
         res.json(returnArr);
     })
