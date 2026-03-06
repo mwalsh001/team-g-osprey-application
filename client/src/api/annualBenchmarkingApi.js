@@ -52,6 +52,7 @@ export const editAttritionSoc = (payload) => apiPost("/api/attritionSoc/edit", p
 
 export const chooseDisplaySchool = (payload) => apiPost("/api/chooseDisplaySchool", payload, "Choose display school failed");
 export const chooseFilterRegion= (payload) => apiPost("/api/chooseFilterRegion", payload, "Choose filter region school failed");
+export const genderFilterRegion= (payload) => apiPost("/api/genderFilterRegion", payload, "Gender filter region school failed");
 export const chooseDisplayYear = (payload) => apiPost("/api/chooseDisplayYear", payload, "Choose display year failed");
 
 export const chooseDisplaySchoolInquiriesYOY = (payload) => apiPost("/api/chooseDisplaySchoolInquiriesYOY", payload, "Choose display year failed");

@@ -589,6 +589,40 @@ async function run() {
 
     })
 
+    app.post("/api/genderFilterRegion", requireAuth, async (req, res) => {
+
+        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
+            {projection:{ID: 1}})
+            .toArray()
+
+        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
+        //console.log("regionKeys: " + regionKeys)
+        let SCHOOL_YR_ID = req.body.displaySchoolYear
+        let data
+        const yearAccs = new Array(3).fill(0);
+
+        for (const key of regionKeys) {
+            const SCHOOL_ID = key;
+            let filter = {SCHOOL_ID, SCHOOL_YR_ID};
+            filter.GENDER = "M"
+            data = await getSchoolEnrollmentData(filter);
+            yearAccs[0] += data.reduce((sum, d) => sum + (d.NR_ENROLLED || 0), 0);
+
+            filter.GENDER = "F"
+            data = await getSchoolEnrollmentData(filter);
+            yearAccs[1] += data.reduce((sum, d) => sum + (d.NR_ENROLLED || 0), 0);
+
+            filter.GENDER = "NB"
+            data = await getSchoolEnrollmentData(filter);
+            yearAccs[2] += data.reduce((sum, d) => sum + (d.NR_ENROLLED || 0), 0);
+        }
+        let avgArray = Array(3)
+        for (let i = 0; i < avgArray.length; i++){
+            avgArray[i] = yearAccs[i]/regionKeys.length
+        }
+        res.json(avgArray)
+    })
+
     async function getSchoolInquiriesYOY(filter) {
         let rows = await aaeCol.find(filter)  // Get the objects from ADMISSION_ACTIVITY_ENROLLMENT
             .sort({SCHOOL_YR_ID: 1}).toArray();
