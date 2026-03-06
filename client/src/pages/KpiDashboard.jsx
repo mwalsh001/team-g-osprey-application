@@ -205,7 +205,6 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         canvasId="compareFilterEnrollmentRate"
                                                     />
                                                 </div>
-
                                             </div>
 
                                             <div className="row g-3 mt-1">
@@ -218,7 +217,6 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedYearLabel={years.find((y) => String(y.id) === String(selectedYearId))?.year ?? ""}
                                                         canvasId="compareEnrollmentByGender"
                                                     />
-
                                                 </div>
                                                 <div className="col-md-6">
                                                     <div className="card shadow-sm h-100">
@@ -235,30 +233,24 @@ export default function KpiDashboard({ username, onLogout }) {
                                                     </div>
                                                 </div>
                                             </div>
-                                            </div>
-                                                <div className="row g-3">
-                                                    <div className="col-md-6">
-                                                        <FilterEnrollmentByGenderChart
-                                                            schools={schools}
-                                                            years={years}
-                                                            selectedSchoolId={selectedSchoolId}
-                                                            selectedYearId={selectedYearId}
-                                                            selectedRegion={selectedRegion}
-                                                            canvasId="filterEnrollmentByGender"
-                                                        />
-                                                     </div>
+
+                                            <div className="row g-3 mt-1">
+                                                <div className="col-md-6">
+                                                    <FilterEnrollmentByGenderChart
+                                                        schools={schools}
+                                                        years={years}
+                                                        selectedSchoolId={selectedSchoolId}
+                                                        selectedYearId={selectedYearId}
+                                                        selectedRegion={selectedRegion}
+                                                        canvasId="filterEnrollmentByGender"
+                                                    />
                                                 </div>
+                                            </div>
                                         </>
+                                    )}
 
                                 </div>
-
-
-
-
-
-
-
-
+                            </div>
 
                             <div className="card text-center mt-4">
                                 <div className="card-body">
