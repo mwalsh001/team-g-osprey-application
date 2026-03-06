@@ -209,14 +209,34 @@ export default function KpiDashboard({ username, onLogout }) {
 
                                             <div className="row g-3 mt-1">
                                                 <div className="col-md-6">
-                                                    <EnrollmentByGenderChart
-                                                        schools={schools}
-                                                        years={years}
-                                                        selectedSchoolId={selectedSchoolId}
-                                                        selectedYearId={selectedYearId}
-                                                        selectedYearLabel={years.find((y) => String(y.id) === String(selectedYearId))?.year ?? ""}
-                                                        canvasId="compareEnrollmentByGender"
-                                                    />
+                                                    <div className="card shadow-sm h-100">
+                                                        <div className="card-body">
+                                                            <div className="row g-3">
+                                                                <div className="col-md-6">
+                                                                    <EnrollmentByGenderChart
+                                                                        schools={schools}
+                                                                        years={years}
+                                                                        selectedSchoolId={selectedSchoolId}
+                                                                        selectedYearId={selectedYearId}
+                                                                        selectedYearLabel={years.find((y) => String(y.id) === String(selectedYearId))?.year ?? ""}
+                                                                        canvasId="compareEnrollmentByGender"
+                                                                        embedded
+                                                                    />
+                                                                </div>
+                                                                <div className="col-md-6">
+                                                                    <FilterEnrollmentByGenderChart
+                                                                        schools={schools}
+                                                                        years={years}
+                                                                        selectedSchoolId={selectedSchoolId}
+                                                                        selectedYearId={selectedYearId}
+                                                                        selectedRegion={selectedRegion}
+                                                                        canvasId="filterEnrollmentByGender"
+                                                                        embedded
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div className="col-md-6">
                                                     <div className="card shadow-sm h-100">
@@ -231,19 +251,6 @@ export default function KpiDashboard({ username, onLogout }) {
                                                             />
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="row g-3 mt-1">
-                                                <div className="col-md-6">
-                                                    <FilterEnrollmentByGenderChart
-                                                        schools={schools}
-                                                        years={years}
-                                                        selectedSchoolId={selectedSchoolId}
-                                                        selectedYearId={selectedYearId}
-                                                        selectedRegion={selectedRegion}
-                                                        canvasId="filterEnrollmentByGender"
-                                                    />
                                                 </div>
                                             </div>
                                         </>

@@ -9,6 +9,7 @@ export default function EnrollmentByGenderChart({
                                                     selectedSchoolId = "",
                                                     selectedYearId = "",
                                                     selectedYearLabel = "",
+                                                    embedded = false,
                                                 }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displaySchoolYear = selectedYearId || initialYearId || "";
@@ -58,22 +59,32 @@ export default function EnrollmentByGenderChart({
         updateEnrollmentByGender();
     }, [displaySchoolId, displaySchoolYear, canvasId]);
 
+    const content = (
+        <>
+            <h6 className="card-title text-center mb-3">
+                {selectedYearLabel
+                    ? `Enrollment By Gender In ${selectedYearLabel}`
+                    : displaySchoolYear
+                        ? `Enrollment By Gender In ${displaySchoolYear}`
+                        : "Enrollment By Gender"}
+            </h6>
+
+            <div className="d-flex justify-content-center">
+                <div className="mx-auto" style={{ width: "85%", height: "260px" }}>
+                    <canvas id={canvasId} className="d-block mx-auto"></canvas>
+                </div>
+            </div>
+        </>
+    );
+
+    if (embedded) {
+        return <div>{content}</div>;
+    }
+
     return (
         <div className="card shadow-sm">
             <div className="card-body">
-                <h6 className="card-title text-center mb-3">
-                    {selectedYearLabel
-                        ? `Enrollment By Gender In ${selectedYearLabel}`
-                        : displaySchoolYear
-                            ? `Enrollment By Gender In ${displaySchoolYear}`
-                            : "Enrollment By Gender"}
-                </h6>
-
-                <div className="d-flex justify-content-center">
-                    <div className="mx-auto" style={{ width: "90%", height: "300px" }}>
-                        <canvas id={canvasId} className="d-block mx-auto"></canvas>
-                    </div>
-                </div>
+                {content}
             </div>
         </div>
     );

@@ -556,36 +556,48 @@ async function run() {
 
     app.post("/api/chooseFilterRegion", requireAuth, async (req, res) => {
 
-        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
-            {projection:{ID: 1}})
-            .toArray()
+        const displayRegion = req.body.displayRegion;
 
-        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
-        //console.log("regionKeys: " + regionKeys)
-        let REGION_CD = req.body.displayRegion
-        let data
-        const GENDER = "U"
-        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+        const regionKeys = await schoolCol
+            .find({REGION_CD: displayRegion}, {projection: {ID: 1}})
+            .toArray();
 
-        for (const key of regionKeys) {
-            const index = regionKeys.indexOf(key);
-            const SCHOOL_ID = key;
-            let filter = {SCHOOL_ID, GENDER};
-            data = await getSchoolEnrollmentData(filter);
-            //console.log(data)
-            // add to accumulators to get averages
-            for (const d of data){
-                yearAccs[0][d.SCHOOL_YR_ID] += d.NR_ENROLLED
-                yearAccs[1][d.SCHOOL_YR_ID] += 1
-            }
+        const schoolIds = [...new Set(regionKeys.map(item => item.ID))];
+        if (!schoolIds.length) {
+            return res.json([]);
         }
-        let avgArray = Array(34)
-        for (let i = 1; i < avgArray.length; i++){
-            avgArray[i] = {SCHOOL_YR_ID: i, NR_ENROLLED: yearAccs[0][i]/yearAccs[1][i]}
-        }
-        avgArray = await yearIndexToActual(avgArray)
-        avgArray = avgArray.slice(1, 34)
-        res.json(avgArray)
+
+        const pipeline = [
+            {
+                $match: {
+                    SCHOOL_ID: {$in: schoolIds},
+                    GENDER: "U"
+                }
+            },
+            {
+                $group: {
+                    _id: {SCHOOL_ID: "$SCHOOL_ID", SCHOOL_YR_ID: "$SCHOOL_YR_ID"},
+                    totalEnrolled: {$sum: "$NR_ENROLLED"}
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.SCHOOL_YR_ID",
+                    avgEnrolled: {$avg: "$totalEnrolled"}
+                }
+            },
+            {$sort: {_id: 1}}
+        ];
+
+        const rows = await aaeCol.aggregate(pipeline).toArray();
+
+        const avgArray = rows.map(row => ({
+            SCHOOL_YR_ID: row._id,
+            NR_ENROLLED: row.avgEnrolled
+        }));
+
+        const mapped = await yearIndexToActual(avgArray);
+        res.json(mapped)
 
     })
 
@@ -671,43 +683,79 @@ async function run() {
     })
 
     app.post("/api/chooseFilterDisplaySchoolInquiriesYOY", requireAuth, async (req, res) => {
-
-        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
-            {projection:{ID: 1}})
-            .toArray()
-
-        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
-        console.log("Regionkeys: "+regionKeys);
-        //console.log("regionKeys: " + regionKeys)
-        //let REGION_CD = req.body.displayRegion
-        let data
-        const GENDER = "U"
+        const displayRegion = req.body.displayRegion;
+        const GENDER = "U";
         const ENROLLMENT_TYPE_CD = "INQUIRIES";
-        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
 
-        for (const key of regionKeys) {
-            //const index = regionKeys.indexOf(key);
-            const SCHOOL_ID = key;
-            let filter = {SCHOOL_ID, GENDER, ENROLLMENT_TYPE_CD};
-            data = await getSchoolInquiriesYOY(filter);
-            // add to accumulators to get averages
-            for (const d of data){
-                yearAccs[0][d.SCHOOL_YR_ID] += d.NR_ENROLLED
-                yearAccs[1][d.SCHOOL_YR_ID] += 1
+        const regionKeys = await schoolCol
+            .find({REGION_CD: displayRegion}, {projection: {ID: 1}})
+            .toArray();
+
+        const schoolIds = [...new Set(regionKeys.map(item => item.ID))];
+        if (!schoolIds.length) {
+            return res.json([]);
+        }
+
+        const pipeline = [
+            {
+                $match: {
+                    SCHOOL_ID: {$in: schoolIds},
+                    GENDER,
+                    ENROLLMENT_TYPE_CD
+                }
+            },
+            {$sort: {SCHOOL_ID: 1, SCHOOL_YR_ID: 1}},
+            {
+                $group: {
+                    _id: {SCHOOL_ID: "$SCHOOL_ID", SCHOOL_YR_ID: "$SCHOOL_YR_ID"},
+                    totalInquiries: {$sum: "$NR_ENROLLED"}
+                }
+            },
+            {$sort: {"_id.SCHOOL_ID": 1, "_id.SCHOOL_YR_ID": 1}}
+        ];
+
+        const rows = await aaeCol.aggregate(pipeline).toArray();
+
+        // Compute YOY per school
+        const bySchool = new Map();
+        for (const row of rows) {
+            const schoolId = row._id.SCHOOL_ID;
+            if (!bySchool.has(schoolId)) bySchool.set(schoolId, []);
+            bySchool.get(schoolId).push({
+                SCHOOL_YR_ID: row._id.SCHOOL_YR_ID,
+                NR_ENROLLED: row.totalInquiries
+            });
+        }
+
+        const yearAccs = new Map();
+        for (const series of bySchool.values()) {
+            for (let i = 1; i < series.length; i++) {
+                const prev = series[i - 1];
+                const curr = series[i];
+                if (!prev || !curr || prev.NR_ENROLLED == null) continue;
+                const v1 = prev.NR_ENROLLED;
+                const v2 = curr.NR_ENROLLED;
+                const percentChange = v1 !== 0 ? ((v2 - v1) / v1) * 100 : 0;
+                const yearId = curr.SCHOOL_YR_ID;
+                if (!yearAccs.has(yearId)) yearAccs.set(yearId, {sum: 0, count: 0});
+                const entry = yearAccs.get(yearId);
+                entry.sum += percentChange;
+                entry.count += 1;
             }
         }
-        let avgArray = Array(34)
-        for (let i = 1; i < avgArray.length; i++){
-            avgArray[i] = {SCHOOL_YR_ID: i, NR_ENROLLED: yearAccs[0][i]/yearAccs[1][i]}
-        }
-        avgArray = await yearIndexToActual(avgArray)
-        avgArray = avgArray.slice(1, 34)
-        //console.log(avgArray);
-        res.json(avgArray)
+
+        const avgArray = Array.from(yearAccs.entries())
+            .map(([yearId, entry]) => ({
+                SCHOOL_YR_ID: Number(yearId),
+                NR_ENROLLED: entry.count ? entry.sum / entry.count : 0
+            }))
+            .sort((a, b) => a.SCHOOL_YR_ID - b.SCHOOL_YR_ID);
+
+        const mapped = await yearIndexToActual(avgArray);
+        res.json(mapped)
 
     })
 
-    // 35 sec runtime
     async function getRetentionYOY(SCHOOL_ID) {
         console.log("inside getRetentionYOY for SCHOOL_ID: " + SCHOOL_ID);
 
@@ -778,6 +826,7 @@ async function run() {
         return data
     }
 
+
     app.post("/api/retentionYOY", requireAuth, async (req, res) => {
 
         const SCHOOL_ID = req.body.displaySchoolId;
@@ -789,37 +838,118 @@ async function run() {
 
     })
 
+
     app.post("/api/filterRetentionYOY", requireAuth, async (req, res) => {
 
-        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
-            {projection:{ID: 1}})
-            .toArray()
-
-        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
-        console.log("Regionkeys: "+regionKeys);
-        //console.log("regionKeys: " + regionKeys)
-        let data
-        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+        const displayRegion = req.body.displayRegion;
         const attritionCol = getAttritionCollection(req.body.attritionCollection);
 
-        for (const key of regionKeys) {
-            //const index = regionKeys.indexOf(key);
-            data = await getRetentionYOY(key);
-            // add to accumulators to get averages
-            for (const d of data){
-                yearAccs[0][d.SCHOOL_YR_ID] += d.percentage
-                yearAccs[1][d.SCHOOL_YR_ID] += 1
-            }
+        const regionKeys = await schoolCol
+            .find({REGION_CD: displayRegion}, {projection: {ID: 1}})
+            .toArray();
+
+        const schoolIds = [...new Set(regionKeys.map(item => item.ID))];
+        if (!schoolIds.length) {
+            return res.json([]);
         }
-        let avgArray = Array(34)
-        for (let i = 1; i < avgArray.length; i++){
-            avgArray[i] = {SCHOOL_YR_ID: i, percentage: yearAccs[0][i]/yearAccs[1][i]}
-        }
-        avgArray = await yearIndexToActualRetention(avgArray)
-        avgArray = avgArray.slice(1, 34)
-        console.log("AVGARRAY Retention")
-        console.log(avgArray);
-        res.json(avgArray)
+
+        const pipeline = [
+            {$match: {SCHOOL_ID: {$in: schoolIds}}},
+            {
+                $group: {
+                    _id: {SCHOOL_ID: "$SCHOOL_ID", SCHOOL_YR_ID: "$SCHOOL_YR_ID"},
+                    totalAdded: {$sum: "$STUDENTS_ADDED_DURING_YEAR"},
+                    totalLeft: {
+                        $sum: {
+                            $add: ["$STUD_DISS_WTHD", "$STUD_NOT_INV", "$STUD_NOT_RETURN"]
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "ADMISSION_ACTIVITY_ENROLLMENT",
+                    let: {schoolId: "$_id.SCHOOL_ID", yearId: "$_id.SCHOOL_YR_ID"},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ["$SCHOOL_ID", "$$schoolId"]},
+                                        {$eq: ["$SCHOOL_YR_ID", "$$yearId"]},
+                                        {$eq: ["$GENDER", "U"]}
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: null,
+                                totalEnrolled: {$sum: "$NR_ENROLLED"}
+                            }
+                        }
+                    ],
+                    as: "enrollment"
+                }
+            },
+            {
+                $addFields: {
+                    totalEnrolled: {
+                        $ifNull: [{$arrayElemAt: ["$enrollment.totalEnrolled", 0]}, 0]
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    startingPop: {$add: ["$totalEnrolled", "$totalAdded"]},
+                    retentionRate: {
+                        $cond: [
+                            {$gt: [{$add: ["$totalEnrolled", "$totalAdded"]}, 0]},
+                            {
+                                $multiply: [
+                                    {
+                                        $divide: [
+                                            {$subtract: [{$add: ["$totalEnrolled", "$totalAdded"]}, "$totalLeft"]},
+                                            {$add: ["$totalEnrolled", "$totalAdded"]}
+                                        ]
+                                    },
+                                    100
+                                ]
+                            },
+                            null
+                        ]
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.SCHOOL_YR_ID",
+                    avgRetentionRate: {$avg: "$retentionRate"}
+                }
+            },
+            {$sort: {_id: 1}}
+        ];
+
+        const rows = await attritionCol.aggregate(pipeline).toArray();
+
+        const yoy = rows
+            .filter(r => r.avgRetentionRate !== null && r.avgRetentionRate !== undefined)
+            .map(r => ({SCHOOL_YR_ID: r._id, retentionRate: r.avgRetentionRate}))
+            .map((current, index, validRows) => {
+                if (index === 0) return null;
+                const previous = validRows[index - 1];
+                const v1 = previous.retentionRate;
+                const v2 = current.retentionRate;
+                if (v1 <= 0) return null;
+                return {
+                    SCHOOL_YR_ID: current.SCHOOL_YR_ID,
+                    percentage: ((v2 - v1) / v1) * 100
+                };
+            })
+            .filter(Boolean);
+
+        const mapped = await yearIndexToActualRetention(yoy);
+        res.json(mapped)
 
     })
 
@@ -921,36 +1051,110 @@ async function run() {
     })
 
     app.post("/api/filterAttritionYOY", requireAuth, async (req, res) => {
-
-        let regionKeys = await schoolCol.find({REGION_CD: req.body.displayRegion},
-            {projection:{ID: 1}})
-            .toArray()
-
-        regionKeys = [...new Set(regionKeys.map(item=>item.ID))]
-        console.log("Regionkeys: "+regionKeys);
-        //console.log("regionKeys: " + regionKeys)
-        let data
-        const yearAccs = Array.from({ length: 2 }, () => new Array(34).fill(0));
+        const displayRegion = req.body.displayRegion;
         const attritionCol = getAttritionCollection(req.body.attritionCollection);
 
-        for (const key of regionKeys) {
-            //const index = regionKeys.indexOf(key);
-            data = await getAttritionYOY(key, attritionCol);
-            // add to accumulators to get averages
-            for (const d of data){
-                yearAccs[0][d.SCHOOL_YR_ID] += d.percentage
-                yearAccs[1][d.SCHOOL_YR_ID] += 1
-            }
+        const regionKeys = await schoolCol
+            .find({REGION_CD: displayRegion}, {projection: {ID: 1}})
+            .toArray();
+
+        const schoolIds = [...new Set(regionKeys.map(item => item.ID))];
+        if (!schoolIds.length) {
+            return res.json([]);
         }
-        let avgArray = Array(34)
-        for (let i = 1; i < avgArray.length; i++){
-            avgArray[i] = {SCHOOL_YR_ID: i, percentage: yearAccs[0][i]/yearAccs[1][i]}
-        }
-        avgArray = await yearIndexToActualRetention(avgArray)
-        avgArray = avgArray.slice(1, 34)
-        console.log("AVGARRAY Attrition")
-        console.log(avgArray);
-        res.json(avgArray)
+
+        const pipeline = [
+            {$match: {SCHOOL_ID: {$in: schoolIds}}},
+            {
+                $group: {
+                    _id: {SCHOOL_ID: "$SCHOOL_ID", SCHOOL_YR_ID: "$SCHOOL_YR_ID"},
+                    totalAdded: {$sum: "$STUDENTS_ADDED_DURING_YEAR"},
+                    totalLeft: {
+                        $sum: {
+                            $add: ["$STUD_DISS_WTHD", "$STUD_NOT_INV", "$STUD_NOT_RETURN"]
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "ADMISSION_ACTIVITY_ENROLLMENT",
+                    let: {schoolId: "$_id.SCHOOL_ID", yearId: "$_id.SCHOOL_YR_ID"},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ["$SCHOOL_ID", "$$schoolId"]},
+                                        {$eq: ["$SCHOOL_YR_ID", "$$yearId"]},
+                                        {$eq: ["$GENDER", "U"]}
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $group: {
+                                _id: null,
+                                totalEnrolled: {$sum: "$NR_ENROLLED"}
+                            }
+                        }
+                    ],
+                    as: "enrollment"
+                }
+            },
+            {
+                $addFields: {
+                    totalEnrolled: {
+                        $ifNull: [{$arrayElemAt: ["$enrollment.totalEnrolled", 0]}, 0]
+                    }
+                }
+            },
+            {
+                $addFields: {
+                    startingPop: {$add: ["$totalEnrolled", "$totalAdded"]},
+                    attritionRate: {
+                        $cond: [
+                            {$gt: [{$add: ["$totalEnrolled", "$totalAdded"]}, 0]},
+                            {
+                                $multiply: [
+                                    {$divide: ["$totalLeft", {$add: ["$totalEnrolled", "$totalAdded"]}]},
+                                    100
+                                ]
+                            },
+                            null
+                        ]
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$_id.SCHOOL_YR_ID",
+                    avgAttritionRate: {$avg: "$attritionRate"}
+                }
+            },
+            {$sort: {_id: 1}}
+        ];
+
+        const rows = await attritionCol.aggregate(pipeline).toArray();
+
+        const yoy = rows
+            .filter(r => r.avgAttritionRate !== null && r.avgAttritionRate !== undefined)
+            .map(r => ({SCHOOL_YR_ID: r._id, attritionRate: r.avgAttritionRate}))
+            .map((current, index, validRows) => {
+                if (index === 0) return null;
+                const previous = validRows[index - 1];
+                const v1 = previous.attritionRate;
+                const v2 = current.attritionRate;
+                if (v1 <= 0 || v2 <= 0) return null;
+                return {
+                    SCHOOL_YR_ID: current.SCHOOL_YR_ID,
+                    percentage: ((v2 - v1) / v1) * 100
+                };
+            })
+            .filter(Boolean);
+
+        const mapped = await yearIndexToActualRetention(yoy);
+        res.json(mapped);
 
     })
 
