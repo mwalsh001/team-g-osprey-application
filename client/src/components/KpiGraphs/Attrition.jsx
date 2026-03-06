@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { attritionYOY, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
+import { attritionYOY, attritionYOYByRegion, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
 
 export default function AttritionYOYChart({
                                               years = [],
@@ -8,6 +8,7 @@ export default function AttritionYOYChart({
                                               initialSchoolId = "",
                                               selectedSchoolId = "",
                                               selectedYearId = "",
+                                              selectedRegion = "",
                                               attritionCollection = "ENROLL_ATTRITION",
                                           }) {
 
@@ -80,21 +81,42 @@ export default function AttritionYOYChart({
         async function updateAttritionYOY() {
             if (!displaySchoolId) return;
             try {
-                const res = await attritionYOY({
+                const payload = {
                     displaySchoolId: Number(displaySchoolId),
                     attritionCollection,
-                });
+                };
+                const regionPayload = selectedRegion
+                    ? { displayRegion: selectedRegion, attritionCollection }
+                    : null;
+                const [res, regionRes] = await Promise.all([
+                    attritionYOY(payload),
+                    regionPayload ? attritionYOYByRegion(regionPayload) : null,
+                ]);
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
+                    const labels = res.map((row) => row.SCHOOL_YR_ID);
+                    const datasets = [
+                        {
+                            label: "Change in Attrition Rate",
+                            data: res.map((row) => row.percentage),
+                        },
+                    ];
+                    if (regionRes && Array.isArray(regionRes)) {
+                        const regionMap = Object.fromEntries(
+                            regionRes.map((row) => [row.SCHOOL_YR_ID, row.percentage])
+                        );
+                        const alignedRegion = labels.map((year) => regionMap[year] ?? null);
+                        datasets.push({
+                            label: `Change in Attrition Rate (Region ${selectedRegion})`,
+                            data: alignedRegion,
+                        });
+                    }
                     new Chart(document.getElementById(canvasId), {
                         type: "line",
                         data: {
-                            labels: res.map((row) => row.SCHOOL_YR_ID),
-                            datasets: [{
-                                label: "Change in Attrition Rate",
-                                data: res.map((row) => row.percentage),
-                            }],
+                            labels,
+                            datasets,
                         },
                         options: {
                             plugins: {

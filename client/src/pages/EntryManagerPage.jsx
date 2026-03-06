@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useState} from "react";
+import { useEffect, useMemo, useState } from "react";
 import AppHeader from "../components/AppHeader.jsx";
 import Sidebar from "../components/SideBar.jsx";
 
@@ -18,8 +18,159 @@ import {
     getSchoolYears
 } from "../api/annualBenchmarkingApi.js";
 
+function AAESection({ aaeGrid, setAaeGrid, saveAAESection }) {
+    return (
+        <div>
+            <h3 style={{marginTop: 0}}>Admissions: Enrollment</h3>
+            <p style={{marginTop: 0, opacity: 0.85}}>
+                Enter the number enrolled for each Enrollment Type and Gender. Leave blank to remove that row.
+            </p>
+
+            <div style={{overflowX: "auto"}}>
+                <table className="table table-bordered table-sm align-middle">
+                    <thead>
+                    <tr>
+                        <th>ENROLLMENT_TYPE_CD</th>
+                        {["M", "F", "NB", "U"].map((g) => {
+                            let tooltipText;
+                            switch (g) {
+                                case "M":
+                                    tooltipText = "Male students";
+                                    break;
+                                case "F":
+                                    tooltipText = "Female students";
+                                    break;
+                                case "NB":
+                                    tooltipText = "Non-binary students";
+                                    break;
+                                case "U":
+                                    tooltipText = "All students";
+                                    break;
+                                default:
+                                    tooltipText = "";
+                            }
+                            return (
+                                <th key={g}>
+                                    {g} {" "}
+                                    <span title={tooltipText} style={{ cursor: "pointer"}}>
+                                        &#x2139;
+                                    </span>
+                                </th>
+                            );
+                        })}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {["INQUIRIES", "FACULTYCHILD"].map((t) => (
+                        <tr key={t}>
+                            <td style={{fontWeight: 600}}>{t}
+                                <span
+                                    style={{ marginLeft: "0.25rem", cursor: "pointer" }}
+                                    title={
+                                        t === "INQUIRIES"
+                                            ? "Number of students who made inquiries in the previous school year"
+                                            : "Number of students who are children of faculty/staff"
+                                    }
+                                >
+                                    &#x2139;
+                                </span>
+                            </td>
+
+                            {["M", "F", "NB", "U"].map((g) => {
+                                return (
+                                    <td key={g}>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            value={aaeGrid[t][g] ?? ""}
+                                            onChange={(e) => {
+                                                const next = e.target.value;
+                                                if (next === "" || /^\d+$/.test(next)) {
+                                                    setAaeGrid((prev) => ({
+                                                        ...prev,
+                                                        [t]: {...prev[t], [g]: next},
+                                                    }));
+                                                }
+                                            }}
+                                            placeholder="(blank = none)"
+                                            style={{
+                                                width: "120px",
+                                            }}
+                                        />
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
+
+            <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                <button
+                    type="button"
+                    className="btn btn-success"
+                    onClick={saveAAESection}
+                >
+                    Submit Section
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function AttritionForm({ title, form, setForm, onSave }) {
+    const field = (name, label, tooltip) => {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontWeight: 600 }}>
+                    {label}
+                    {tooltip && (
+                        <span style={{marginLeft: "0.25rem", cursor: "pointer" }} title={tooltip}> &#x2139; </span>
+                    )}
+                </label>
+                <input
+                    type="text"
+                    inputMode="numeric"
+                    value={form[name] ?? ""}
+                    onChange={(e) => {
+                        const next = e.target.value;
+                        if (next === "" || /^\d+$/.test(next)) {
+                            setForm((prev) => ({ ...prev, [name]: next }));
+                        }
+                    }}
+                    style={{ width: "240px", border: "1px solid #ccc" }}
+                />
+            </div>
+        );
+    };
+
+    return (
+        <div>
+            <h3 style={{ marginTop: 0 }}>{title}</h3>
+            <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                {field("STUDENTS_ADDED_DURING_YEAR", "Students added during year", "Number of students who enrolled during the school year")}
+                {field("STUDENTS_GRADUATED", "Students graduated", "Number of students who graduated from Grade 12 this year (Only relevant for Grade 12 reports)")}
+                {field("EXCH_STUD_REPTS", "Exchange student reports", "Number of exchange students reported this year")}
+                {field("STUD_DISS_WTHD", "Dismissed / withdrew", "Number of students who withdrew or were dismissed during this year")}
+                {field("STUD_NOT_INV", "Not invited", "Number of students not invited to return next year")}
+                {field("STUD_NOT_RETURN", "Not returning", "Number of students who did not return by choice")}
+            </div>
+
+            <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+                <button type="button"
+                        className="btn btn-success"
+                        onClick={onSave}
+                >
+                    Submit Section
+                </button>
+            </div>
+        </div>
+    );
+}
+
 // Helpers
-export default function AnnualFormPage({username, onLogout}) {
+export default function AnnualFormPage({ username, onLogout }) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);
@@ -108,7 +259,6 @@ export default function AnnualFormPage({username, onLogout}) {
                 }, 1000);
             }
         }
-
         void loadLookups();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -121,11 +271,11 @@ export default function AnnualFormPage({username, onLogout}) {
             try {
                 setNotify("");
 
-                const [aae, attr, attrSoc] = await Promise.all([
-                    getAAE({schoolId, schoolYearId}),
-                    getAttrition({schoolId, schoolYearId, gradeId}),
-                    getAttritionSoc({schoolId, schoolYearId, gradeId}),
-                ]);
+            const [aae, attr, attrSoc] = await Promise.all([
+                getAAE({ schoolId, schoolYearId }),
+                getAttrition({ schoolId, schoolYearId, gradeId }),
+                getAttritionSoc({ schoolId, schoolYearId, gradeId }),
+            ]);
 
                 setAaeRows(aae);
                 setAttrRows(attr);
@@ -225,7 +375,7 @@ export default function AnnualFormPage({username, onLogout}) {
                 }
             }
 
-            const refreshed = await getAAE({schoolId, schoolYearId});
+            const refreshed = await getAAE({ schoolId, schoolYearId });
             setAaeRows(refreshed);
 
             setNotify("Saved Admissions: Enrollment section.");
@@ -234,14 +384,14 @@ export default function AnnualFormPage({username, onLogout}) {
         }
     }
 
-    async function saveAttritionSection({soc}) {
+    async function saveAttritionSection({ soc }) {
         if (!schoolId || !schoolYearId) return;
 
         const form = soc ? attrSocForm : attrForm;
         const payload = {
             schoolId: Number(schoolId),
             schoolYearId: Number(schoolYearId),
-            ...(gradeId ? {GRADE_DEF_ID: Number(gradeId)} : {}),
+            ...(gradeId ? { GRADE_DEF_ID: Number(gradeId) } : {}),
             STUDENTS_ADDED_DURING_YEAR: Number(form.STUDENTS_ADDED_DURING_YEAR),
             STUDENTS_GRADUATED: Number(form.STUDENTS_GRADUATED ?? form.STUDENTS_GRADUATED), // safety
             EXCH_STUD_REPTS: Number(form.EXCH_STUD_REPTS),
@@ -258,8 +408,8 @@ export default function AnnualFormPage({username, onLogout}) {
 
             if (first) {
                 const updated = soc
-                    ? await editAttritionSoc({...payload, mongoId: first.mongoId})
-                    : await editAttrition({...payload, mongoId: first.mongoId});
+                    ? await editAttritionSoc({ ...payload, mongoId: first.mongoId })
+                    : await editAttrition({ ...payload, mongoId: first.mongoId });
 
                 soc ? setAttrSocRows(updated) : setAttrRows(updated);
             } else {
@@ -282,7 +432,7 @@ export default function AnnualFormPage({username, onLogout}) {
                 <div className="text-muted">
                     {selectedSchool ? (
                         <>
-                            <strong>School:</strong> {selectedSchool.name} (ID: {selectedSchool.id})
+                                        <strong>School:</strong> {selectedSchool.name}
                         </>
                     ) : (
                         <span>Select a school</span>
@@ -290,7 +440,7 @@ export default function AnnualFormPage({username, onLogout}) {
                     {" | "}
                     {selectedYear ? (
                         <>
-                            <strong>Year:</strong> {selectedYear.year ?? selectedYear.id} (ID: {selectedYear.id})
+                                        <strong>Year:</strong> {selectedYear.year ?? selectedYear.id}
                         </>
                     ) : (
                         <span>Select a year</span>
@@ -298,7 +448,7 @@ export default function AnnualFormPage({username, onLogout}) {
                     {" | "}
                     {selectedGrade ? (
                         <>
-                            <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id} (ID: {selectedGrade.id})
+                                        <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id}
                         </>
                     ) : (
                         <span>Select a grade</span>
@@ -351,11 +501,11 @@ export default function AnnualFormPage({username, onLogout}) {
                             value={schoolId}
                             onChange={(e) => setSchoolId(e.target.value)}
                         >
-                            {schools.map((s) => (
-                                <option key={s.id} value={String(s.id)}>
-                                    {s.name} (ID: {s.id})
-                                </option>
-                            ))}
+                                                    {schools.map((s) => (
+                                                        <option key={s.id} value={String(s.id)}>
+                                                            {s.name}
+                                                        </option>
+                                                    ))}
                         </select>
                     )}
                 </div>
@@ -367,11 +517,11 @@ export default function AnnualFormPage({username, onLogout}) {
                         value={schoolYearId}
                         onChange={(e) => setSchoolYearId(e.target.value)}
                     >
-                        {years.map((y) => (
-                            <option key={y.id} value={String(y.id)}>
-                                {y.year ?? y.id} (ID: {y.id})
-                            </option>
-                        ))}
+                                                {years.map((y) => (
+                                                    <option key={y.id} value={String(y.id)}>
+                                                        {y.year ?? y.id}
+                                                    </option>
+                                                ))}
                     </select>
                 </div>
 
@@ -382,11 +532,11 @@ export default function AnnualFormPage({username, onLogout}) {
                         value={gradeId}
                         onChange={(e) => setGradeId(e.target.value)}
                     >
-                        {grades.map((g) => (
-                            <option key={g.id} value={String(g.id)}>
-                                {g.name ?? g.id} (ID: {g.id})
-                            </option>
-                        ))}
+                                                {grades.map((g) => (
+                                                    <option key={g.id} value={String(g.id)}>
+                                                        {g.name ?? g.id}
+                                                    </option>
+                                                ))}
                     </select>
                 </div>
             </div>
@@ -394,119 +544,9 @@ export default function AnnualFormPage({username, onLogout}) {
     }
 
 
-    function AAESection() {
-        return (
-            <div>
-                <h3 style={{marginTop: 0}}>Admissions: Enrollment</h3>
-                <p style={{marginTop: 0, opacity: 0.85}}>
-                    Enter the number enrolled for each Enrollment Type and Gender. Leave blank to remove that row.
-                </p>
-
-                <div style={{overflowX: "auto"}}>
-                    <table className="table table-bordered table-sm align-middle">
-                        <thead>
-                        <tr>
-                            <th>ENROLLMENT_TYPE_CD</th>
-                            {["M", "F", "NB", "U"].map((g) => (
-                                <th key={g}>{g}</th>
-                            ))}
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {["INQUIRIES", "FACULTYCHILD"].map((t) => (
-                            <tr key={t}>
-                                <td style={{fontWeight: 600}}>{t}</td>
-                                {["M", "F", "NB", "U"].map((g) => {
-                                    return (
-                                        <td key={g}>
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={aaeGrid[t][g] ?? ""}
-                                                onChange={(e) => {
-                                                    const next = e.target.value;
-                                                    if (next === "" || /^\d+$/.test(next)) {
-                                                        setAaeGrid((prev) => ({
-                                                            ...prev,
-                                                            [t]: {...prev[t], [g]: next},
-                                                        }));
-                                                    }
-                                                }}
-                                                placeholder="(blank = none)"
-                                                style={{
-                                                    width: "120px",
-                                                }}
-                                            />
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div style={{marginTop: "1rem", display: "flex", gap: "0.5rem"}}>
-                    <button
-                        type="button"
-                        className="btn btn-success"
-                        onClick={saveAAESection}
-                    >
-                        Submit Section
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    function AttritionForm({title, form, setForm, onSave}) {
-        const field = (name, label) => {
-            return (
-                <div style={{display: "flex", flexDirection: "column", gap: "0.25rem"}}>
-                    <label style={{fontWeight: 600}}>{label}</label>
-                    <input
-                        type="text"
-                        inputMode="numeric"
-                        value={form[name] ?? ""}
-                        onChange={(e) => {
-                            const next = e.target.value;
-                            if (next === "" || /^\d+$/.test(next)) {
-                                setForm((prev) => ({...prev, [name]: next}));
-                            }
-                        }}
-                        style={{width: "240px", border: "1px solid #ccc"}}
-                    />
-                </div>
-            );
-        };
-
-        return (
-            <div>
-                <h3 style={{marginTop: 0}}>{title}</h3>
-                <div style={{display: "flex", gap: "1.5rem", flexWrap: "wrap"}}>
-                    {field("STUDENTS_ADDED_DURING_YEAR", "Students added during year")}
-                    {field("STUDENTS_GRADUATED", "Students graduated")}
-                    {field("EXCH_STUD_REPTS", "Exchange student reports")}
-                    {field("STUD_DISS_WTHD", "Dismissed / withdrew")}
-                    {field("STUD_NOT_INV", "Not invited")}
-                    {field("STUD_NOT_RETURN", "Not returning")}
-                </div>
-
-                <div style={{marginTop: "1rem", display: "flex", gap: "0.5rem"}}>
-                    <button type="button"
-                            className="btn btn-success"
-                            onClick={onSave}
-                    >
-                        Submit Section
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName}/>
+            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName} />
             <div className="container-fluid p-0">
                 <div className="d-flex" style={{minHeight: "100vh"}}>
                     <div style={{flex: "0 0 auto"}}>
@@ -526,7 +566,11 @@ export default function AnnualFormPage({username, onLogout}) {
 
                             <div className="card">
                                 <div className="card-body">
-                                    {section === "AAE" && <AAESection/>}
+                                    {section === "AAE" && (
+                                        <AAESection
+                                            aaeGrid={aaeGrid}
+                                            setAaeGrid={setAaeGrid}
+                                            saveAAESection={saveAAESection} s/>)}
 
                                     {section === "ATTR" && (
                                         <AttritionForm

@@ -17,16 +17,19 @@ export default function InquiriesYOYChart({
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
+                    console.log("Inquiries single school")
+                    console.log(res);
                     new Chart(document.getElementById(canvasId), {
                         type: "line",
                         data: {
                             labels: res.map((row) => row.SCHOOL_YR_ID),
                             datasets: [{
                                 label: "Change in Total Inquiries",
-                                data: res.map((row) => row.percentage),
+                                data: res.map((row) => row.NR_ENROLLED),
                             }],
                         },
                         options: {
+                            maintainAspectRatio: false,
                             plugins: {
                                 tooltip: {
                                     callbacks: {
@@ -62,8 +65,10 @@ export default function InquiriesYOYChart({
     }, [displaySchoolId, canvasId]);
 
     return (
-        <div>
-            <canvas id={canvasId}></canvas>
+        <div className="d-flex justify-content-center">
+            <div className="mx-auto w-100" style={{ maxWidth: "900px", height: "300px" }}>
+                <canvas id={canvasId} className="d-block mx-auto" style={{ height: "100%", width: "100%" }}></canvas>
+            </div>
         </div>
     );
 }
