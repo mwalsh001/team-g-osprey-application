@@ -9,6 +9,7 @@ export default function AttritionYOYChart({
                                               selectedSchoolId = "",
                                               selectedYearId = "",
                                               selectedRegion = "",
+                                              showRegionLabels = false,
                                               attritionCollection = "ENROLL_ATTRITION",
                                           }) {
 
@@ -18,6 +19,7 @@ export default function AttritionYOYChart({
     const [studentsNotInvited, setStudentsNotInvited] = useState(null);
     const [studentsNotReturn, setStudentsNotReturn] = useState(null);
     const [mostCommonReason, setMostCommonReason] = useState(null);
+    const getPrimaryValue = (value) => (Array.isArray(value) ? value[0] : value);
 
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displaySchoolYearLabel =
@@ -41,7 +43,7 @@ export default function AttritionYOYChart({
                     displaySchoolYear: Number(displaySchoolYear),
                     attritionCollection,
                 }
-                if(selectedRegion !== ""){
+                if (showRegionLabels && selectedRegion !== "") {
                     payload.displayRegion = selectedRegion
                 }
                 //console.log("Attrition payload: "+payload);
@@ -52,6 +54,9 @@ export default function AttritionYOYChart({
                     const diss = res.dissOrWthd ?? null;
                     const notInv = res.notInvited ?? null;
                     const notRet = res.notReturn ?? null;
+                    const dissValue = getPrimaryValue(diss);
+                    const notInvValue = getPrimaryValue(notInv);
+                    const notRetValue = getPrimaryValue(notRet);
                     console.log("Attrition rate: "+res.attritionRate);
                     console.log("Attrition diss: "+diss);
                     console.log("Attrition notInv: "+notInv);
@@ -63,17 +68,17 @@ export default function AttritionYOYChart({
 
                     if (res.mostCommon) {
                         setMostCommonReason(res.mostCommon);
-                    } else if ([diss, notInv, notRet].every((v) => typeof v === "number")) {
-                        const max = Math.max(diss, notInv, notRet);
+                    } else if ([dissValue, notInvValue, notRetValue].every((v) => typeof v === "number")) {
+                        const max = Math.max(dissValue, notInvValue, notRetValue);
                         if (max === 0) {
                             setMostCommonReason(null);
-                        } else if (diss === notInv && notInv === notRet) {
+                        } else if (dissValue === notInvValue && notInvValue === notRetValue) {
                             setMostCommonReason(null);
                         } else {
                             const winners = [];
-                            if (diss === max) winners.push("Dismissed or Withdrawn");
-                            if (notInv === max) winners.push("Not Invited Back");
-                            if (notRet === max) winners.push("Did Not Return");
+                            if (dissValue === max) winners.push("Dismissed or Withdrawn");
+                            if (notInvValue === max) winners.push("Not Invited Back");
+                            if (notRetValue === max) winners.push("Did Not Return");
                             setMostCommonReason(winners.join("|"));
                         }
                     } else {
@@ -85,7 +90,7 @@ export default function AttritionYOYChart({
             }
         }
         updateAttrition();
-    }, [displaySchoolId, displaySchoolYear, attritionCollection]);
+    }, [displaySchoolId, displaySchoolYear, attritionCollection, selectedRegion, showRegionLabels]);
 
     useEffect(() => {
         async function updateAttritionYOY() {
@@ -95,7 +100,7 @@ export default function AttritionYOYChart({
                     displaySchoolId: Number(displaySchoolId),
                     attritionCollection,
                 };
-                const regionPayload = selectedRegion
+                const regionPayload = showRegionLabels && selectedRegion
                     ? { displayRegion: selectedRegion, attritionCollection }
                     : null;
                 const [res, regionRes] = await Promise.all([
@@ -108,7 +113,9 @@ export default function AttritionYOYChart({
                     const labels = res.map((row) => row.SCHOOL_YR_ID);
                     const datasets = [
                         {
-                            label: "Change in Attrition Rate",
+                            label: showRegionLabels && regionRes
+                                ? "My school: Change in Attrition Rate"
+                                : "Change in Attrition Rate",
                             data: res.map((row) => row.percentage),
                         },
                     ];
@@ -118,7 +125,9 @@ export default function AttritionYOYChart({
                         );
                         const alignedRegion = labels.map((year) => regionMap[year] ?? null);
                         datasets.push({
-                            label: `Change in Attrition Rate (Region ${selectedRegion})`,
+                            label: showRegionLabels
+                                ? "Schools in region: Change in Attrition Rate"
+                                : `Change in Attrition Rate (Region ${selectedRegion})`,
                             data: alignedRegion,
                         });
                     }
@@ -160,7 +169,23 @@ export default function AttritionYOYChart({
             }
         }
         updateAttritionYOY();
-    }, [displaySchoolId, canvasId, attritionCollection]);
+    }, [displaySchoolId, canvasId, attritionCollection, selectedRegion, showRegionLabels]);
+
+    const renderValue = (value) => {
+        if (value === null || value === undefined) return "--";
+        if (Array.isArray(value)) {
+            if (showRegionLabels) {
+                return (
+                    <>
+                        {value.length >= 1 && <div>My School: {value[0]}%</div>}
+                        {value.length >= 2 && <div>Schools in region {selectedRegion}: {value[1]}%</div>}
+                    </>
+                );
+            }
+            return value.length >= 1 ? `${value[0]}%` : "--";
+        }
+        return `${value}%`;
+    };
 
     return (
         <div>
@@ -172,16 +197,7 @@ export default function AttritionYOYChart({
                                 Attrition Rate{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                             </h6>
                             <div className="fs-4 fw-semibold">
-                                {/* Always show the first rate if data exists */}
-                                {attritionRate !== null && attritionRate.length >= 1 && (
-                                    <div>My School: {attritionRate[0]}%</div>
-                                )}
-                                {/* Only show the second rate if the array has at least 2 items */}
-                                {attritionRate !== null && attritionRate.length >= 2 && (
-                                    <div>Schools in region {selectedRegion}: {attritionRate[1]}%</div>
-                                )}
-                                {/* Fallback if data hasn't loaded yet */}
-                                {attritionRate === null && "--"}
+                                {renderValue(attritionRate)}
                             </div>
                         </div>
                     </div>
@@ -195,13 +211,7 @@ export default function AttritionYOYChart({
                             <h6 className="card-title text-muted">
                                 Dismissed or Withdrew During the Year{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                             </h6>
-                            {studentsDismissed !== null && studentsDismissed.length >= 1 && (
-                                <div>My School: {studentsDismissed[0]}%</div>
-                            )}
-                            {studentsDismissed !== null && studentsDismissed.length >= 2 && (
-                                <div>Schools in region {selectedRegion}: {studentsDismissed[1]}%</div>
-                            )}
-                            {studentsDismissed === null && "--"}
+                            {renderValue(studentsDismissed)}
                             <div className="fs-6 fw-medium">
                             </div>
                         </div>
@@ -216,13 +226,7 @@ export default function AttritionYOYChart({
                             <h6 className="card-title text-muted">
                                 Not invited to Return{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                             </h6>
-                            {studentsNotInvited !== null && studentsNotInvited.length >= 1 && (
-                                <div>My School: {studentsNotInvited[0]}%</div>
-                            )}
-                            {studentsNotInvited !== null && studentsNotInvited.length >= 2 && (
-                                <div>Schools in region {selectedRegion}: {studentsNotInvited[1]}%</div>
-                            )}
-                            {studentsNotInvited === null && "--"}
+                            {renderValue(studentsNotInvited)}
                             <div className="fs-6 fw-medium">
                             </div>
                         </div>
@@ -237,13 +241,7 @@ export default function AttritionYOYChart({
                             <h6 className="card-title text-muted">
                                 Did Not Return by Choice{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                             </h6>
-                            {studentsNotReturn !== null && studentsNotReturn.length >= 1 && (
-                                <div>My School: {studentsNotReturn[0]}%</div>
-                            )}
-                            {studentsNotReturn !== null && studentsNotReturn.length >= 2 && (
-                                <div>Schools in region {selectedRegion}: {studentsNotReturn[1]}%</div>
-                            )}
-                            {studentsNotReturn === null && "--"}
+                            {renderValue(studentsNotReturn)}
                             <div className="fs-6 fw-medium">
                             </div>
                         </div>

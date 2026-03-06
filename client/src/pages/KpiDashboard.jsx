@@ -162,19 +162,21 @@ export default function KpiDashboard({ username, onLogout }) {
                                                 </div>
                                             </div>
 
-                                            <div className="row g-3 mt-1">
-                                                <div className="col-md-6">
-                                                    <EnrollmentByGenderChart
-                                                        schools={schools}
-                                                        years={years}
-                                                        selectedSchoolId={selectedSchoolId}
-                                                        selectedYearId={selectedYearId}
-                                                        selectedYearLabel={years.find((y) => String(y.id) === String(selectedYearId))?.year ?? ""}
-                                                        canvasId="enrollmentByGender"
-                                                    />
+                                            <div className="row g-3 mt-1 align-items-stretch">
+                                                <div className="col-md-6 d-flex">
+                                                    <div className="w-100 h-100">
+                                                        <EnrollmentByGenderChart
+                                                            schools={schools}
+                                                            years={years}
+                                                            selectedSchoolId={selectedSchoolId}
+                                                            selectedYearId={selectedYearId}
+                                                            selectedYearLabel={years.find((y) => String(y.id) === String(selectedYearId))?.year ?? ""}
+                                                            canvasId="enrollmentByGender"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <div className="col-md-6">
-                                                    <div className="card shadow-sm h-100">
+                                                <div className="col-md-6 d-flex">
+                                                    <div className="card shadow-sm h-100 w-100">
                                                         <div className="card-body">
                                                             <h6 className="card-title text-center mb-3">
                                                                 Inquiries YOY
@@ -306,6 +308,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedYearId={selectedYearId}
                                                         selectedRegion={selectedRegion}
                                                         canvasId="compareRetentionYOY"
+                                                        showRegionLabels
                                                     />
                                                     <FilterCombinedYOYChart
                                                         selectedSchoolId={selectedSchoolId}
@@ -322,6 +325,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedYearId={selectedYearId}
                                                         selectedRegion={selectedRegion}
                                                         canvasId="compareAttritionYOY"
+                                                        showRegionLabels
                                                     />
                                                 </div>
                                             </div>
@@ -386,6 +390,8 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         canvasId="compareRetentionYOYSoc"
                                                         deriveFromAttrition={true}
                                                         attritionCollection="ENROLL_ATTRITION_SOC"
+                                                        showRegionLabels
+                                                        selectedRegion={selectedRegion}
                                                     />
                                                     <FilterCombinedYOYChart
                                                         selectedSchoolId={selectedSchoolId}
@@ -403,6 +409,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         selectedYearId={selectedYearId}
                                                         canvasId="compareAttritionYOYSoc"
                                                         selectedRegion={selectedRegion}
+                                                        showRegionLabels
                                                         attritionCollection="ENROLL_ATTRITION_SOC"
                                                     />
                                                 </div>

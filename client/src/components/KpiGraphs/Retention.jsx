@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { retentionYOY, getRetention } from "../../api/annualBenchmarkingApi.js";
+import { retentionYOY, getRetention, getAttritionRate } from "../../api/annualBenchmarkingApi.js";
 
 
 export default function RetentionYOYChart ({
@@ -9,7 +9,10 @@ export default function RetentionYOYChart ({
                                                initialSchoolId = "",
                                                selectedSchoolId = "",
                                                selectedYearId = "",
-                                                selectedRegion = ""
+                                                selectedRegion = "",
+                                                showRegionLabels = false,
+                                                deriveFromAttrition = false,
+                                                attritionCollection = "ENROLL_ATTRITION",
                                            }) {
 
     const [displaySchoolYear, setDisplaySchoolYear] = useState("");
@@ -38,23 +41,42 @@ export default function RetentionYOYChart ({
                     displaySchoolId: Number(displaySchoolId),
                     displaySchoolYear: Number(displaySchoolYear)
                 }
-                if(displayRegion !== ""){
+                if (showRegionLabels && displayRegion !== "") {
                     payload.displayRegion = displayRegion
                 }
-                console.log("payload:" + payload)
-                const res = await getRetention(payload);
-                if (res) setRetentionRate(res);
-                console.log("retentionRate: ", retentionRate)
+                if (deriveFromAttrition) {
+                    const res = await getAttritionRate({
+                        ...payload,
+                        attritionCollection,
+                    });
+                    if (res?.attritionRate) {
+                        if (Array.isArray(res.attritionRate)) {
+                            setRetentionRate(res.attritionRate.map((value) =>
+                                typeof value === "number" ? Number((100 - value).toFixed(2)) : value
+                            ));
+                        } else if (typeof res.attritionRate === "number") {
+                            setRetentionRate(Number((100 - res.attritionRate).toFixed(2)));
+                        } else {
+                            setRetentionRate(null);
+                        }
+                    } else {
+                        setRetentionRate(null);
+                    }
+                } else {
+                    const res = await getRetention(payload);
+                    if (res) setRetentionRate(res);
+                }
             } catch (err) {
                 console.error("Retention rate failed:", err);
             }
         }
         updateRetention();
-    }, [displaySchoolId, displaySchoolYear, displayRegion]);
+    }, [displaySchoolId, displaySchoolYear, displayRegion, showRegionLabels, deriveFromAttrition, attritionCollection]);
 
     useEffect(() => {
         async function updateRetentionYOY() {
             if (!displaySchoolId) return;
+            if (deriveFromAttrition) return;
             try {
                 const res = await retentionYOY({ displaySchoolId: Number(displaySchoolId) });
                 if (res) {
@@ -101,7 +123,23 @@ export default function RetentionYOYChart ({
             }
         }
         updateRetentionYOY();
-    }, [displaySchoolId, canvasId]);
+    }, [displaySchoolId, canvasId, deriveFromAttrition]);
+
+    const renderValue = (value) => {
+        if (value === null || value === undefined) return "--";
+        if (Array.isArray(value)) {
+            if (showRegionLabels) {
+                return (
+                    <>
+                        {value.length >= 1 && <div>My School: {value[0]}%</div>}
+                        {value.length >= 2 && <div>Schools in region {displayRegion}: {value[1]}%</div>}
+                    </>
+                );
+            }
+            return value.length >= 1 ? `${value[0]}%` : "--";
+        }
+        return `${value}%`;
+    };
 
     return (
         <div className="d-flex flex-column gap-3">
@@ -111,18 +149,7 @@ export default function RetentionYOYChart ({
                         Retention Rate{displaySchoolYearLabel ? ` in ${displaySchoolYearLabel}` : ""}
                     </h6>
                     <div className="fs-4 fw-semibold">
-                        {/* Always show the first rate if data exists */}
-                        {retentionRate !== null && retentionRate.length >= 1 && (
-                            <div>My School: {retentionRate[0]}%</div>
-                        )}
-
-                        {/* Only show the second rate if the array has at least two items */}
-                        {retentionRate !== null && retentionRate.length >= 2 && (
-                            <div>Schools in region {displayRegion}: {retentionRate[1]}%</div>
-                        )}
-
-                        {/* Fallback if data hasn't loaded yet */}
-                        {retentionRate === null && "--"}
+                        {renderValue(retentionRate)}
                     </div>
                 </div>
             </div>
