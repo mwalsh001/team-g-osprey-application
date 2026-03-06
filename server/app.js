@@ -694,7 +694,7 @@ async function run() {
             {
                 $match: {
                     SCHOOL_ID: {$in: schoolIds},
-                    GENDER,
+                    GENDER: { $ne: GENDER },
                     ENROLLMENT_TYPE_CD
                 }
             },
@@ -710,41 +710,41 @@ async function run() {
 
         const rows = await aaeCol.aggregate(pipeline).toArray();
 
-        // Compute YOY per school
-        const bySchool = new Map();
+        // Sum all rows for the same year
+        const totalsByYear = new Map();
+
         for (const row of rows) {
-            const schoolId = row._id.SCHOOL_ID;
-            if (!bySchool.has(schoolId)) bySchool.set(schoolId, []);
-            bySchool.get(schoolId).push({
-                SCHOOL_YR_ID: row._id.SCHOOL_YR_ID,
-                NR_ENROLLED: row.totalInquiries
-            });
+            const year = row._id.SCHOOL_YR_ID;
+            const value = row.totalInquiries;
+
+            if (!totalsByYear.has(year)) totalsByYear.set(year, 0);
+            totalsByYear.set(year, totalsByYear.get(year) + value);
         }
 
-        const yearAccs = new Map();
-        for (const series of bySchool.values()) {
-            for (let i = 1; i < series.length; i++) {
-                const prev = series[i - 1];
-                const curr = series[i];
-                if (!prev || !curr || prev.NR_ENROLLED == null) continue;
-                const v1 = prev.NR_ENROLLED;
-                const v2 = curr.NR_ENROLLED;
-                const percentChange = v1 !== 0 ? ((v2 - v1) / v1) * 100 : 0;
-                const yearId = curr.SCHOOL_YR_ID;
-                if (!yearAccs.has(yearId)) yearAccs.set(yearId, {sum: 0, count: 0});
-                const entry = yearAccs.get(yearId);
-                entry.sum += percentChange;
-                entry.count += 1;
-            }
-        }
-
-        const avgArray = Array.from(yearAccs.entries())
-            .map(([yearId, entry]) => ({
-                SCHOOL_YR_ID: Number(yearId),
-                NR_ENROLLED: entry.count ? entry.sum / entry.count : 0
+        const yearlyTotals = Array.from(totalsByYear.entries())
+            .map(([year, total]) => ({
+                SCHOOL_YR_ID: Number(year),
+                NR_ENROLLED: total
             }))
             .sort((a, b) => a.SCHOOL_YR_ID - b.SCHOOL_YR_ID);
 
+        const avgArray = yearlyTotals
+            .map((current, i, arr) => {
+                if (i === 0) return null;
+
+                const prev = arr[i - 1].NR_ENROLLED;
+                const curr = current.NR_ENROLLED;
+
+                const percentChange = prev !== 0
+                    ? ((curr - prev) / prev) * 100
+                    : 0;
+
+                return {
+                    SCHOOL_YR_ID: current.SCHOOL_YR_ID,
+                    NR_ENROLLED: percentChange
+                };
+            })
+            .filter(Boolean);
         const mapped = await yearIndexToActual(avgArray);
         res.json(mapped)
 
