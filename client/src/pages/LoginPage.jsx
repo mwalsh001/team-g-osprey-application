@@ -1,6 +1,6 @@
 import {useState} from "react";
-import { useNavigate } from "react-router-dom";
-import { login } from "../api/loginApi.js";
+import {useNavigate} from "react-router-dom";
+import {login} from "../api/loginApi.js";
 import LoginForm from "../components/LoginForm.jsx";
 
 export default function LoginPage({ onLogin }) {
@@ -22,7 +22,7 @@ export default function LoginPage({ onLogin }) {
         localStorage.setItem("role", response.role || role)
         localStorage.setItem("schoolName", response.schoolName || "");
         onLogin(username);
-        navigate("/", { replace: true });
+        navigate("/", {replace: true});
     }
 
     return (

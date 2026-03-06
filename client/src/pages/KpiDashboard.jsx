@@ -14,7 +14,7 @@ import FilterInquiriesYOYChart from "../components/KpiGraphs/FilterInquiries.jsx
 import InquiriesYOYChart from "../components/KpiGraphs/Inquiries.jsx";
 import FilterEnrollmentByGenderChart from "../components/KpiGraphs/FilterEnrollmentByGender.jsx";
 
-export default function KpiDashboard({ username, onLogout }) {
+export default function KpiDashboard({username, onLogout}) {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [schools, setSchools] = useState([]);
     const [years, setYears] = useState([]);

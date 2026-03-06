@@ -1,19 +1,19 @@
-import { useEffect } from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { chooseDisplaySchoolInquiriesYOY } from "../../api/annualBenchmarkingApi.js";
+import {chooseDisplaySchoolInquiriesYOY} from "../../api/annualBenchmarkingApi.js";
 
 export default function InquiriesYOYChart({
-    canvasId = "inquiriesYOY",
-    initialSchoolId = "",
-    selectedSchoolId = "",
-}) {
+                                              canvasId = "inquiriesYOY",
+                                              initialSchoolId = "",
+                                              selectedSchoolId = "",
+                                          }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
 
     useEffect(() => {
         async function updateInquiriesYOY() {
             if (!displaySchoolId) return;
             try {
-                const res = await chooseDisplaySchoolInquiriesYOY({ displaySchoolId: Number(displaySchoolId) });
+                const res = await chooseDisplaySchoolInquiriesYOY({displaySchoolId: Number(displaySchoolId)});
                 if (res) {
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
@@ -33,7 +33,7 @@ export default function InquiriesYOYChart({
                             plugins: {
                                 tooltip: {
                                     callbacks: {
-                                        label: function(context) {
+                                        label: function (context) {
                                             let label = context.dataset.label || "";
                                             if (label) label += ": ";
                                             if (context.parsed.y !== null) {
@@ -47,7 +47,7 @@ export default function InquiriesYOYChart({
                             scales: {
                                 y: {
                                     ticks: {
-                                        callback: function(value) {
+                                        callback: function (value) {
                                             return value + "%";
                                         }
                                     }
@@ -60,6 +60,7 @@ export default function InquiriesYOYChart({
                 console.error("Inquiries YOY chart failed:", err);
             }
         }
+
         updateInquiriesYOY();
     }, [displaySchoolId, canvasId]);
 

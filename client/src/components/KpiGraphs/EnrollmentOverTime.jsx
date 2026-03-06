@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { chooseDisplaySchool } from "../../api/annualBenchmarkingApi.js";
+import {chooseDisplaySchool} from "../../api/annualBenchmarkingApi.js";
 
 export default function EnrollmentOverTimeChart({
                                                     canvasId = "enrollmentRate",
