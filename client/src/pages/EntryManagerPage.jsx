@@ -82,6 +82,7 @@ export default function AnnualFormPage({username, onLogout}) {
 
     const {
         transcript,
+        finalTranscript,
         resetTranscript,
     } = useSpeechRecognition();
 
@@ -114,17 +115,17 @@ export default function AnnualFormPage({username, onLogout}) {
     }, []);
     //voice test
     useEffect(() => {
-        const text = transcript.trim().toLowerCase();
+        if (!finalTranscript) return;
+        const text = finalTranscript.trim().toLowerCase();
         if (text === "hello") {
             setNotify("pass");
             resetTranscript();
             return;
         }
-        const m = text.match(/^set mail inquiries to (\d+)$/) ||
-            text.match(/^set mail increase to (\d+)$/) ||
-            text.match(/^set mail inquiries to (\d+)$./);
+        const m = text.match(/^set mail (inquiries|increase) to (\d+)$/) ||
+            text.match(/^set mail (inquiries|increase) to (\d+)$./);
         if (m) {
-            const value = m[1];
+            const value = m[2];
             setAaeGrid((prev) => ({
                 ...prev,
                 INQUIRIES: {...prev.INQUIRIES, M: value}
@@ -132,11 +133,10 @@ export default function AnnualFormPage({username, onLogout}) {
             setNotify(`Set inquiries male to ${value}`);
             resetTranscript();
         }
-        const f = text.match(/^set female inquiries to (\d+)$/) ||
-            text.match(/^set mail increase to (\d+)$/) ||
-            text.match(/^set mail inquiries to (\d+)$./);
+        const f = text.match(/^set female (inquiries|increase) to (\d+)$/) ||
+            text.match(/^set female (inquiries|increase) to (\d+)$./);
         if (f) {
-            const value = f[1];
+            const value = f[2];
             setAaeGrid((prev) => ({
                 ...prev,
                 INQUIRIES: {...prev.INQUIRIES, F: value}
@@ -145,7 +145,7 @@ export default function AnnualFormPage({username, onLogout}) {
             resetTranscript();
         }
 
-    }, [transcript, resetTranscript]);
+    }, [finalTranscript, resetTranscript]);
 
     // load annual data
     useEffect(() => {
