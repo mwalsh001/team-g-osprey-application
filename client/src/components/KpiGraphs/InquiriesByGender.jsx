@@ -24,12 +24,19 @@ export default function InquiriesByGenderChart({
                 });
                 const ctx = document.getElementById(canvasId);
                 if (ctx && res && Array.isArray(res)) {
+                    const total = res.reduce((sum, value) => sum + Number(value || 0), 0);
+                    const baseLabels = ["Male", "Female", "Non-Binary"];
+                    const labels = baseLabels.map((label, index) => {
+                        const value = Number(res[index] || 0);
+                        const percent = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
+                        return `${label} (${percent}%)`;
+                    });
                     const existingChart = Chart.getChart(canvasId);
                     if (existingChart) existingChart.destroy();
                     new Chart(ctx, {
                         type: "pie",
                         data: {
-                            labels: ["Male", "Female", "Non-Binary"],
+                            labels,
                             datasets: [{
                                 label: "School Inquiries by Gender",
                                 data: res,
