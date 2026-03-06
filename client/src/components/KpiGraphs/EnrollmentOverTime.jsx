@@ -35,6 +35,10 @@ export default function EnrollmentOverTimeChart({
                                 },
                             ],
                         },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                        },
                     });
                 }
             } catch (err) {
@@ -53,8 +57,8 @@ export default function EnrollmentOverTimeChart({
                 </h6>
 
                 <div className="d-flex justify-content-center">
-                    <div style={{ width: "90%", height: "300px" }}>
-                        <canvas id={canvasId}></canvas>
+                    <div className="mx-auto w-100" style={{ maxWidth: "900px", height: "300px" }}>
+                        <canvas id={canvasId} className="d-block mx-auto" style={{ height: "100%", width: "100%" }}></canvas>
                     </div>
                 </div>
             </div>
