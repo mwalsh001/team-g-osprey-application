@@ -263,6 +263,7 @@ export default function KpiDashboard({ username, onLogout }) {
                                                         years={years}
                                                         selectedSchoolId={selectedSchoolId}
                                                         selectedYearId={selectedYearId}
+                                                        selectedRegion={selectedRegion}
                                                         canvasId="compareRetentionYOY"
                                                     />
                                                     <CombinedYOYChart selectedSchoolId={selectedSchoolId} canvasId="compareCombinedYOY" />
