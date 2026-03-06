@@ -1455,25 +1455,46 @@ async function run() {
         // Average the region's raw counts by the number of schools
         const rDiv = region.count || 1;
 
-        // First index is specific school, second is regional average
-        res.json({
-            attritionRate: [
-                Number(target.rate.toFixed(2)),
-                Number(region.rate.toFixed(2))
-            ],
-            dissOrWthd: [
-                target.diss,
-                Number((region.diss / rDiv).toFixed(2))
-            ],
-            notInvited: [
-                target.notInv,
-                Number((region.notInv / rDiv).toFixed(2))
-            ],
-            notReturn: [
-                target.notRet,
-                Number((region.notRet / rDiv).toFixed(2))
-            ]
-        });
+        if (regionId) {
+            // First index is specific school, second is regional average
+            res.json({
+                attritionRate: [
+                    Number(target.rate.toFixed(2)),
+                    Number(region.rate.toFixed(2))
+                ],
+                dissOrWthd: [
+                    target.diss,
+                    Number((region.diss / rDiv).toFixed(2))
+                ],
+                notInvited: [
+                    target.notInv,
+                    Number((region.notInv / rDiv).toFixed(2))
+                ],
+                notReturn: [
+                    target.notRet,
+                    Number((region.notRet / rDiv).toFixed(2))
+                ]
+            });
+        }
+        else {
+            // First index is specific school, second is regional average
+            res.json({
+                attritionRate: [
+                    Number(target.rate.toFixed(2))
+                ],
+                dissOrWthd: [
+                    target.diss
+                ],
+                notInvited: [
+                    target.notInv
+                ],
+                notReturn: [
+                    target.notRet
+                ]
+            });
+        }
+
+
     });
 
     const clientDist = path.join(__dirname, "..", "client", "dist");
