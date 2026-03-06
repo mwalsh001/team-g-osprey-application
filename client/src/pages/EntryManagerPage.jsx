@@ -120,7 +120,9 @@ export default function AnnualFormPage({username, onLogout}) {
             resetTranscript();
             return;
         }
-        const m = text.match(/^set mail inquiries to (\d+)$/);
+        const m = text.match(/^set mail inquiries to (\d+)$/) ||
+            text.match(/^set mail increase to (\d+)$/) ||
+            text.match(/^set mail inquiries to (\d+)$./);
         if (m) {
             const value = m[1];
             setAaeGrid((prev) => ({
