@@ -1381,7 +1381,7 @@ async function run() {
             }, 0);
 
             const activity = await eaCol.find({
-                SCHOOL_ID: schoolId,
+                // SCHOOL_ID: schoolId,  // should this be SCHOOL_ID: regionKeys[i] ?
                 SCHOOL_YR_ID: schoolYear
             }).toArray();
 
@@ -1412,61 +1412,69 @@ async function run() {
         res.json(returnArr);
     })
 
-
     app.post("/api/attritionYear", requireAuth, async (req, res) => {
-        const schoolId = req.body.displaySchoolId;
+        const targetSchoolId = req.body.displaySchoolId;
         const schoolYear = req.body.displaySchoolYear;
+        const regionId = req.body.displayRegion;
         const attritionCol = getAttritionCollection(req.body.attritionCollection);
 
-        const enrollment = await aaeCol.find({
-            SCHOOL_ID: schoolId,
-            SCHOOL_YR_ID: schoolYear,
-            GENDER: "U"
-        }).toArray();
+        // Helper function, takes in the school ids
+        const getRawTotals = async (ids) => {
+            const [enrollment, activity] = await Promise.all([
+                aaeCol.find({ SCHOOL_ID: { $in: ids }, SCHOOL_YR_ID: schoolYear, GENDER: "U" }).toArray(),
+                attritionCol.find({ SCHOOL_ID: { $in: ids }, SCHOOL_YR_ID: schoolYear }).toArray()
+            ]);
 
-        const totalEnrolled = enrollment.reduce((accumulator, obj) => {
-            return accumulator + obj.NR_ENROLLED;
-        }, 0);
+            const totalEnrolled = enrollment.reduce((acc, obj) => acc + (obj.NR_ENROLLED || 0), 0);
+            const totalAdded = activity.reduce((acc, obj) => acc + (obj.STUDENTS_ADDED_DURING_YEAR || 0), 0);
 
-        const activity = await attritionCol.find({
-            SCHOOL_ID: schoolId,
-            SCHOOL_YR_ID: schoolYear
-        }).toArray();
+            const diss = activity.reduce((acc, obj) => acc + (obj.STUD_DISS_WTHD || 0), 0);
+            const notInv = activity.reduce((acc, obj) => acc + (obj.STUD_NOT_INV || 0), 0);
+            const notRet = activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0);
 
-        const totalAdded = activity.reduce((accumulator, obj) => {
-            return accumulator + obj.STUDENTS_ADDED_DURING_YEAR;
-        }, 0);
+            const startingPop = totalEnrolled + totalAdded;
+            const totalLeft = diss + notInv + notRet;
+            const rate = startingPop > 0 ? (totalLeft / startingPop) * 100 : 0;
 
-        const totalLeft = activity.reduce((accumulator, obj) => {
-            return accumulator + obj.STUD_DISS_WTHD + obj.STUD_NOT_INV + obj.STUD_NOT_RETURN;
-        }, 0);
+            return { rate, diss, notInv, notRet, count: ids.length };
+        };
 
-        const startingPop = totalEnrolled + totalAdded;
+        // Get stats for Target School and Region in parallel
+        const targetPromise = getRawTotals([targetSchoolId]);
 
-        let attritionRate = 0;
-
-        if (startingPop > 0) {
-            attritionRate = (totalLeft / startingPop) * 100;
+        let regionPromise = Promise.resolve({ rate: 0, diss: 0, notInv: 0, notRet: 0, count: 1 });
+        if (regionId) {
+            const schoolsInRegion = await schoolCol.find({ REGION_CD: regionId }, { projection: { ID: 1 } }).toArray();
+            const regionIds = [...new Set(schoolsInRegion.map(s => s.ID))];
+            regionPromise = getRawTotals(regionIds);
         }
 
-        const reasons = [
-            {
-                reason: "Dismissed or Withdrawn",
-                value: activity.reduce((acc, obj) => acc + (obj.STUD_DISS_WTHD || 0), 0)
-            },
-            {reason: "Not Invited Back", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_INV || 0), 0)},
-            {reason: "Did Not Return", value: activity.reduce((acc, obj) => acc + (obj.STUD_NOT_RETURN || 0), 0)},
-        ];
+        // Wait for promises to finish running
+        const [target, region] = await Promise.all([targetPromise, regionPromise]);
 
+        // Average the region's raw counts by the number of schools
+        const rDiv = region.count || 1;
+
+        // First index is specific school, second is regional average
         res.json({
-            attritionRate: Number(attritionRate.toFixed(2)),
-            dissOrWthd: reasons[0].value,
-            notInvited: reasons[1].value,
-            notReturn: reasons[2].value
+            attritionRate: [
+                Number(target.rate.toFixed(2)),
+                Number(region.rate.toFixed(2))
+            ],
+            dissOrWthd: [
+                target.diss,
+                Number((region.diss / rDiv).toFixed(2))
+            ],
+            notInvited: [
+                target.notInv,
+                Number((region.notInv / rDiv).toFixed(2))
+            ],
+            notReturn: [
+                target.notRet,
+                Number((region.notRet / rDiv).toFixed(2))
+            ]
         });
-
-
-    })
+    });
 
     const clientDist = path.join(__dirname, "..", "client", "dist");
     app.use(express.static(clientDist));
