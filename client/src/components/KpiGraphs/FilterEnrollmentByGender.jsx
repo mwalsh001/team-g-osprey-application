@@ -1,34 +1,36 @@
-import {useEffect} from "react";
+import { useEffect } from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import {chooseDisplayYear} from "../../api/annualBenchmarkingApi.js";
+import {genderFilterRegion} from "../../api/annualBenchmarkingApi.js";
 
-export default function EnrollmentByGenderChart({
-                                                    canvasId = "enrollmentByGender",
+
+export default function FilterEnrollmentByGenderChart({
+                                                    canvasId = "filterEnrollmentByGender",
                                                     initialSchoolId = "",
                                                     initialYearId = "",
                                                     selectedSchoolId = "",
                                                     selectedYearId = "",
-                                                    selectedYearLabel = "",
+                                                    selectedRegion = "",
                                                     embedded = false,
                                                 }) {
     const displaySchoolId = selectedSchoolId || initialSchoolId || "";
     const displaySchoolYear = selectedYearId || initialYearId || "";
+    const displayRegion = selectedRegion ||  "";
 
     useEffect(() => {
+        console.log("updating filter gender chart!")
         async function updateEnrollmentByGender() {
-            if (!displaySchoolId || !displaySchoolYear) return;
+            if (!displayRegion) return;
 
             const payload = {
                 displaySchoolId: Number(displaySchoolId),
                 displaySchoolYear: Number(displaySchoolYear),
+                displayRegion: displayRegion
             };
 
-            const res = await chooseDisplayYear(payload);
-            const ctx = document.getElementById(canvasId);
-
+            const res = await genderFilterRegion(payload);
             console.log(res);
 
-            if (ctx && res && Array.isArray(res)) {
+            if (res && Array.isArray(res)) {
                 const total = res.reduce((sum, value) => sum + Number(value || 0), 0);
                 const baseLabels = ["Male", "Female", "Non-Binary"];
                 const labels = baseLabels.map((label, index) => {
@@ -41,14 +43,25 @@ export default function EnrollmentByGenderChart({
                     existing.destroy();
                 }
 
-                new Chart(ctx, {
+                new Chart(document.getElementById(canvasId), {
                     type: "pie",
                     data: {
                         labels,
                         datasets: [
                             {
-                                label: "School Enrollment by Gender",
+                                label: `Average school Enrollment`,
                                 data: res,
+                                backgroundColor: [
+                                    "rgba(54, 162, 235, 0.6)",
+                                    "rgba(255, 99, 132, 0.6)",
+                                    "rgba(255, 206, 86, 0.6)",
+                                ],
+                                borderColor: [
+                                    "rgba(54, 162, 235, 1)",
+                                    "rgba(255, 99, 132, 1)",
+                                    "rgba(255, 206, 86, 1)",
+                                ],
+                                borderWidth: 1,
                             },
                         ],
                     },
@@ -57,16 +70,12 @@ export default function EnrollmentByGenderChart({
         }
 
         updateEnrollmentByGender();
-    }, [displaySchoolId, displaySchoolYear, canvasId]);
+    }, [displaySchoolId, displaySchoolYear, displayRegion, canvasId]);
 
     const content = (
         <>
             <h6 className="card-title text-center mb-3">
-                {selectedYearLabel
-                    ? `Enrollment By Gender In ${selectedYearLabel}`
-                    : displaySchoolYear
-                        ? `Enrollment By Gender In ${displaySchoolYear}`
-                        : "Enrollment By Gender"}
+                Enrollment By Gender: {displayRegion} Average
             </h6>
 
             <div className="d-flex justify-content-center">
