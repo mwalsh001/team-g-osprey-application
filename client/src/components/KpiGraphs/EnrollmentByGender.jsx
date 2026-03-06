@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+import {useEffect} from "react";
 import Chart from "https://cdn.jsdelivr.net/npm/chart.js/auto/+esm";
-import { chooseDisplayYear } from "../../api/annualBenchmarkingApi.js";
+import {chooseDisplayYear} from "../../api/annualBenchmarkingApi.js";
 
 export default function EnrollmentByGenderChart({
                                                     canvasId = "enrollmentByGender",

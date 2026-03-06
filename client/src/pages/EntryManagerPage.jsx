@@ -212,6 +212,69 @@ export default function AnnualFormPage({ username, onLogout }) {
         STUD_NOT_INV: "",
         STUD_NOT_RETURN: "",
     });
+    const [chatOpen, setChatOpen] = useState(false);
+    const [chatInput, setChatInput] = useState("");
+    const [chatMessages, setChatMessages] = useState([
+        {
+            role: "assistant",
+            content: "Support bot: ask about field meanings, KPI/chart interpretation, or data submission best practices."
+        }
+    ]);
+
+    function getMiniReply(input) {
+        const t = input.toLowerCase();
+
+        if (t.includes("field") || t.includes("mean") || t.includes("what is")) {
+            if (t.includes("inquir")) {
+                return "INQUIRIES = total prospective student inquiries, grouped by gender (M, F, NB, U).";
+            }
+            if (t.includes("faculty")) {
+                return "FACULTYCHILD = number of enrolled students who are children of faculty/staff, grouped by gender.";
+            }
+            if (t.includes("added")) {
+                return "STUDENTS_ADDED_DURING_YEAR = students who joined after the school year started.";
+            }
+            if (t.includes("graduat")) {
+                return "STUDENTS_GRADUATED = students who completed graduation in the selected year.";
+            }
+            if (t.includes("exchange")) {
+                return "EXCH_STUD_REPTS = exchange student departures or reports captured for attrition.";
+            }
+            if (t.includes("dismiss") || t.includes("withd")) {
+                return "STUD_DISS_WTHD = students dismissed or withdrawn during the year.";
+            }
+            if (t.includes("not invited")) {
+                return "STUD_NOT_INV = students not invited to return next year.";
+            }
+            if (t.includes("not return")) {
+                return "STUD_NOT_RETURN = students who chose not to return.";
+            }
+            return "Ask with a field name (for example: inquiries, faculty child, graduated, dismissed/withdrew, not invited).";
+        }
+
+        if (t.includes("kpi") || t.includes("chart") || t.includes("interpret") || t.includes("read")) {
+            return "Interpretation guide: compare categories over the same school/year/grade, look for large deltas by gender, and verify that totals align with your source records before submission.";
+        }
+
+        if (t.includes("best practice") || t.includes("submission") || t.includes("submit") || t.includes("quality")) {
+            return "Best practices: use one official source, enter whole numbers only, leave blank only when truly not applicable, review outliers before submit, and save section-by-section.";
+        }
+
+        return "I answer support questions- field meanings, KPI/chart interpretation, and data submission best practices";
+    }
+
+    function sendMiniChat() {
+        const text = chatInput.trim();
+        if (!text) return;
+
+        const reply = getMiniReply(text);
+        setChatMessages((prev) => [
+            ...prev,
+            {role: "user", content: text},
+            {role: "assistant", content: reply}
+        ]);
+        setChatInput("");
+    }
 
     const [notify, setNotify] = useState("");
     const role = localStorage.getItem("role");
@@ -432,7 +495,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                 <div className="text-muted">
                     {selectedSchool ? (
                         <>
-                                        <strong>School:</strong> {selectedSchool.name}
+                            <strong>School:</strong> {selectedSchool.name} (ID: {selectedSchool.id})
                         </>
                     ) : (
                         <span>Select a school</span>
@@ -440,7 +503,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     {" | "}
                     {selectedYear ? (
                         <>
-                                        <strong>Year:</strong> {selectedYear.year ?? selectedYear.id}
+                            <strong>Year:</strong> {selectedYear.year ?? selectedYear.id} (ID: {selectedYear.id})
                         </>
                     ) : (
                         <span>Select a year</span>
@@ -448,7 +511,7 @@ export default function AnnualFormPage({ username, onLogout }) {
                     {" | "}
                     {selectedGrade ? (
                         <>
-                                        <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id}
+                            <strong>Grade:</strong> {selectedGrade.name ?? selectedGrade.id} (ID: {selectedGrade.id})
                         </>
                     ) : (
                         <span>Select a grade</span>
@@ -501,11 +564,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                             value={schoolId}
                             onChange={(e) => setSchoolId(e.target.value)}
                         >
-                                                    {schools.map((s) => (
-                                                        <option key={s.id} value={String(s.id)}>
-                                                            {s.name}
-                                                        </option>
-                                                    ))}
+                            {schools.map((s) => (
+                                <option key={s.id} value={String(s.id)}>
+                                    {s.name} (ID: {s.id})
+                                </option>
+                            ))}
                         </select>
                     )}
                 </div>
@@ -517,11 +580,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                         value={schoolYearId}
                         onChange={(e) => setSchoolYearId(e.target.value)}
                     >
-                                                {years.map((y) => (
-                                                    <option key={y.id} value={String(y.id)}>
-                                                        {y.year ?? y.id}
-                                                    </option>
-                                                ))}
+                        {years.map((y) => (
+                            <option key={y.id} value={String(y.id)}>
+                                {y.year ?? y.id} (ID: {y.id})
+                            </option>
+                        ))}
                     </select>
                 </div>
 
@@ -532,11 +595,11 @@ export default function AnnualFormPage({ username, onLogout }) {
                         value={gradeId}
                         onChange={(e) => setGradeId(e.target.value)}
                     >
-                                                {grades.map((g) => (
-                                                    <option key={g.id} value={String(g.id)}>
-                                                        {g.name ?? g.id}
-                                                    </option>
-                                                ))}
+                        {grades.map((g) => (
+                            <option key={g.id} value={String(g.id)}>
+                                {g.name ?? g.id} (ID: {g.id})
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -546,8 +609,66 @@ export default function AnnualFormPage({ username, onLogout }) {
 
     return (
         <>
-            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName} />
+            <AppHeader username={username} onLogout={onLogout} role={role} schoolName={schoolName}/>
             <div className="container-fluid p-0">
+                <div style={{position: "fixed", right: "20px", bottom: "20px", zIndex: 1200}}>
+                    {!chatOpen && (
+                        <button
+                            type="button"
+                            className="btn btn-primary rounded-pill"
+                            onClick={() => setChatOpen(true)}
+                        >
+                            Chat
+                        </button>
+                    )}
+
+                    {chatOpen && (
+                        <div className="card shadow" style={{width: 320}}>
+                            <div className="card-header d-flex justify-content-between align-items-center py-2">
+                                <strong>Mini Chatbot</strong>
+                                <button
+                                    type="button"
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={() => setChatOpen(false)}
+                                >
+                                    x
+                                </button>
+                            </div>
+
+                            <div className="card-body" style={{maxHeight: 260, overflowY: "auto"}}>
+                                {chatMessages.map((m, i) => (
+                                    <div
+                                        key={i}
+                                        className={`mb-2 d-flex ${m.role === "user" ? "justify-content-end" : "justify-content-start"}`}
+                                    >
+                                        <div
+                                            className={`px-2 py-1 rounded ${m.role === "user" ? "bg-primary text-white" : "bg-light border"}`}>
+                                            {m.content}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="card-footer d-flex gap-2">
+                                <input
+                                    type="text"
+                                    className="form-control form-control-sm"
+                                    value={chatInput}
+                                    onChange={(e) => setChatInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            sendMiniChat();
+                                        }
+                                    }} placeholder="Type a question"
+                                />
+                                <button type="button" className="btn btn-sm btn-primary" onClick={sendMiniChat}>
+                                    Send
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
                 <div className="d-flex" style={{minHeight: "100vh"}}>
                     <div style={{flex: "0 0 auto"}}>
                         <Sidebar

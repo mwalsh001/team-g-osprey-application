@@ -510,7 +510,7 @@ async function run() {
                 }
             },
 
-            // Sort by year
+             // Sort by year
             {$sort: {_id: 1}},
 
             // Rename fields for consistency

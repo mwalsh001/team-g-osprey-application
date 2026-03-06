@@ -1,8 +1,8 @@
 export async function login(username, password, role) {
     const response = await fetch("/api/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role }),
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, password, role}),
     });
     if (!response.ok) throw new Error("Login failed");
     return response.json();
@@ -20,5 +20,5 @@ export async function createSchoolAccount(username, password, schoolName) {
 
 function authHeaders() {
     const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return token ? {Authorization: `Bearer ${token}`} : {};
 }
